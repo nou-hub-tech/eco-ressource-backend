@@ -8,6 +8,9 @@ import lombok.Data;
 @Data
 public class TransportOfferRequest {
 
+  /** When set (e.g. by admin), offer is created for this transporter; otherwise the caller's transporter profile is used. */
+  private Long transporterId;
+
   @NotBlank private String fromLocation;
 
   @NotBlank private String toLocation;
@@ -17,4 +20,7 @@ public class TransportOfferRequest {
   @NotBlank private String weightLabel;
 
   @NotNull private BigDecimal proposedEarn;
+
+  /** Optional; defaults to open on create. */
+  private String status;
 }

@@ -1,5 +1,6 @@
 package com.marketplace.backend.dto;
 
+import com.marketplace.backend.entity.Listing;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,4 +32,22 @@ public class ListingDto {
   private String verified;
   private String rating;
   private String time;
+
+  public static ListingDto from(Listing l) {
+    String company =
+        l.getEnterprise() != null ? l.getEnterprise().getCompanyName() : "";
+    return ListingDto.builder()
+        .id(l.getId())
+        .title(l.getTitle())
+        .company(company)
+        .category(l.getCategory())
+        .price(l.getPrice())
+        .qty(l.getQuantityLabel())
+        .status(l.getStatus().name())
+        .ai(l.getAiInsight())
+        .views(l.getViews())
+        .enquiries(l.getEnquiries())
+        .posted(l.getPostedLabel())
+        .build();
+  }
 }

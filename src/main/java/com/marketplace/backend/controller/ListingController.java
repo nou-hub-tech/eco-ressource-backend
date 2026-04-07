@@ -1,16 +1,11 @@
 package com.marketplace.backend.controller;
 
 import com.marketplace.backend.dto.CreateListingRequest;
-import com.marketplace.backend.dto.ExchangeRequestDto;
 import com.marketplace.backend.dto.ListingDto;
 import com.marketplace.backend.dto.ListingModerationRequest;
-import com.marketplace.backend.dto.ReservationDto;
-import com.marketplace.backend.dto.StockItemDto;
-import com.marketplace.backend.dto.WalletTransactionDto;
 import com.marketplace.backend.service.ListingService;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,8 +30,18 @@ public class ListingController {
 
   @GetMapping
   @PreAuthorize("isAuthenticated()")
-  public ResponseEntity<List<ListingDto>> all(Authentication auth) {
-    return ResponseEntity.ok(listingService.findAllPublished(auth));
+  public ResponseEntity<List<ListingDto>> all() {
+    return ResponseEntity.ok(listingService.findAll());
+  }
+
+  @GetMapping("/{id}")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<ListingDto> get(@PathVariable Long id) {
+    try {
+      return ResponseEntity.ok(listingService.getById(id));
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.notFound().build();
+    }
   }
 
   @GetMapping("/my")
@@ -65,7 +70,7 @@ public class ListingController {
   public ResponseEntity<ListingDto> update(
       @PathVariable Long id, Authentication auth, @Valid @RequestBody CreateListingRequest req) {
     try {
-      return ResponseEntity.ok(listingService.updateMine(id, auth, req));
+      return ResponseEntity.ok(listingService.update(id, auth, req));
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
     }
@@ -75,7 +80,7 @@ public class ListingController {
   @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
   public ResponseEntity<Void> delete(@PathVariable Long id, Authentication auth) {
     try {
-      listingService.deleteMine(id, auth);
+      listingService.delete(id, auth);
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
@@ -91,58 +96,5 @@ public class ListingController {
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
     }
-  }
-
-  @GetMapping("/stock/my")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
-  public ResponseEntity<List<StockItemDto>> stockMy(Authentication auth) {
-    try {
-      return ResponseEntity.ok(listingService.stockMine(auth));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
-  }
-
-  @GetMapping("/exchange-requests")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
-  public ResponseEntity<List<ExchangeRequestDto>> exchangeRequests(Authentication auth) {
-    try {
-      return ResponseEntity.ok(listingService.myExchangeRequests(auth));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
-  }
-
-  @PatchMapping("/exchange-requests/{id}")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
-  public ResponseEntity<ExchangeRequestDto> patchExchange(
-      @PathVariable Long id,
-      Authentication auth,
-      @RequestBody Map<String, String> body) {
-    try {
-      String st = body.get("status");
-      if (st == null) {
-        return ResponseEntity.badRequest().build();
-      }
-      return ResponseEntity.ok(listingService.updateExchangeStatus(id, st, auth));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
-  }
-
-  @GetMapping("/reservations/my")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
-  public ResponseEntity<List<ReservationDto>> reservationsMy(Authentication auth) {
-    try {
-      return ResponseEntity.ok(listingService.myReservations(auth));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
-  }
-
-  @GetMapping("/wallet/transactions")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
-  public ResponseEntity<List<WalletTransactionDto>> wallet(Authentication auth) {
-    return ResponseEntity.ok(listingService.myWalletTransactions(auth));
   }
 }

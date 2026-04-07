@@ -1,5 +1,6 @@
 package com.marketplace.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.marketplace.backend.entity.enums.StockItemStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +23,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "stock_items")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor

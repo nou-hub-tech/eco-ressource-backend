@@ -1,5 +1,6 @@
 package com.marketplace.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.marketplace.backend.entity.enums.TransportOfferStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,6 +24,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "transport_offers")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
