@@ -1,0 +1,20 @@
+---
+description: Comments, moderation, notifications, and realtime rules
+globs: **/{comment,comments,post,posts,listing,annonce,annonces,group,groups,websocket,notification}/**/*
+alwaysApply: false
+---
+
+# Gestion Annonces Comments And Realtime
+
+- Use threaded comments only. Replies must use `Comment.parent_id`.
+- `Comment.content` is required. `parent_id` is optional, but when present it must reference a comment from the same `listing_id`.
+- Only authenticated users can comment.
+- On closed groups, comment access may be limited to participants and the seller.
+- Add anti-spam protections for repeated comment submissions.
+- Before publishing a comment, support abusive-content moderation when enabled.
+- Use `Perspective API` to detect toxic, insulting, aggressive, or inappropriate comment content.
+- Based on moderation score, a comment may be accepted, rejected, masked, or sent to moderation.
+- Listing owner and admin must be able to remove inappropriate comments.
+- Realtime updates should cover only meaningful events: new comment, new group participant, group progress, group completion, group expiry, and relevant new listings.
+- Use Spring Boot WebSocket + STOMP for realtime delivery.
+- Do not implement a full chat system; comments replace chat by design.

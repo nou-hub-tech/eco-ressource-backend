@@ -1,0 +1,25 @@
+---
+description: Naming and code structure conventions for Gestion Annonces implementation
+globs: **/{controller,service,repository,entity,dto,mapper,websocket,listing,annonce,annonces,group,groups,comment,comments,favorite,favorites,marketplace,ai}/**/*
+alwaysApply: false
+---
+
+# Gestion Annonces Code Style
+
+- Use explicit, business-oriented names that match the module spec.
+- Keep class and file names aligned with the domain entities and services: `ResourceListing`, `PostAttachment`, `Comment`, `GroupPurchase`, `GroupParticipant`, `Favorite`.
+- Prefer one clear responsibility per class.
+- Controller names should end with `Controller`.
+- Service classes should end with `Service`; implementation classes may end with `ServiceImpl` only if the project already uses that convention.
+- Repository names should end with `Repository`.
+- DTO names should be explicit, such as `CreateListingRequest`, `ListingResponse`, `JoinGroupRequest`, `CommentResponse`.
+- Mapper names should end with `Mapper`.
+- WebSocket-related classes should clearly indicate purpose, such as `ListingWebSocketController` or `GroupNotificationPublisher`.
+- Use enums for listing type, listing status, and group status instead of string literals.
+- Keep REST endpoints resource-oriented and aligned with the finalized spec.
+- Keep validation close to request DTOs and enforce business validation again in services.
+- Avoid bloated controllers. Put business rules in services, persistence in repositories, and transport mapping in mappers/DTOs.
+- Keep methods short and purposeful. Split large flows into helper methods when they represent meaningful business steps.
+- Prefer readable code over clever abstractions.
+- Do not introduce chat-related naming or classes; use comment/thread terminology only.
+- Do not introduce extra domain entities unless the spec is explicitly extended.

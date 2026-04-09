@@ -1,0 +1,15 @@
+---
+description: Source of truth and core direction for Gestion Annonces
+globs: **/{listing,annonce,annonces,post,posts,comment,comments,group,groups,favorite,favorites,marketplace,ai}/**/*
+alwaysApply: false
+---
+
+# Module Gestion Annonces
+
+- Treat `module-gestion-annonces-final.md` as the source of truth. Read it before implementing or changing related code.
+- Keep the module simple, business-driven, and implementation-ready. Do not add unnecessary entities, architecture, or abstractions.
+- Build around exactly these 7 entities: `Product`, `ResourceListing`, `PostAttachment`, `Comment`, `GroupPurchase`, `GroupParticipant`, `Favorite`.
+- `ResourceListing` is the core entity. Its type is mandatory at creation: `SURPLUS`, `DEMANDE`, `GROUP_BUYING`.
+- Keep the main module in Spring Boot. Use Python only for AI-related enrichment.
+- Replace chat with threaded comments only.
+- Respect the dedicated companion rules for business logic, comments/realtime, AI/integrations, and API/validation.

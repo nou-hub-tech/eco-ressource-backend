@@ -1,0 +1,19 @@
+---
+description: API surface, validations, and implementation structure for the module
+globs: **/{controller,service,repository,entity,dto,mapper,listing,annonce,annonces,group,groups,comment,comments,favorite,favorites,marketplace}/**/*
+alwaysApply: false
+---
+
+# Gestion Annonces API And Validation
+
+- Use the module structure from the spec: `controller`, `service`, `repository`, `entity`, `dto`, `mapper`, `websocket`.
+- Listings API: `POST /api/listings`, `GET /api/listings`, `GET /api/listings/{id}`, `GET /api/listings/search`.
+- Comments API: `POST /api/listings/{id}/comments`, `GET /api/listings/{id}/comments`.
+- Group API: `POST /api/groups/{id}/join`, `GET /api/groups/{id}`, `DELETE /api/groups/{id}/leave`, `GET /api/groups/{id}/participants`.
+- Favorites API: `POST /api/listings/{id}/favorite`, `DELETE /api/listings/{id}/favorite`.
+- Validate on the backend even if the frontend already validates.
+- Mandatory backend checks: required fields, entity existence, permissions, current listing/group state, parent-child comment consistency, attachment validity, quantity limits, uniqueness rules, and abuse/moderation rules.
+- Validate files: accepted extensions, MIME type when possible, max size, max count, reject empty files, and store safely.
+- Validate comment rules: non-empty content, max length, anti-spam, moderation path, listing existence.
+- Validate group join rules at the last possible moment to avoid stale quantity/state decisions.
+- Keep implementation aligned with the main scenarios from the spec: create listing, explore/search, comment, join/leave group, favorite, realtime updates.
