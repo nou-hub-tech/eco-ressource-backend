@@ -61,6 +61,12 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers("/api/auth/**")
                     .permitAll()
+                    .requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs")
+                    .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/listings/create")
                     .hasAnyRole("ENTERPRISE", "ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/transport-offers")
@@ -84,6 +90,14 @@ public class SecurityConfig {
                     .requestMatchers("/api/stock-items/**")
                     .authenticated()
                     .requestMatchers("/api/stock-movements/**")
+                    .authenticated()
+                    .requestMatchers("/api/resource-listings/**")
+                    .authenticated()
+                    .requestMatchers("/api/groups/**")
+                    .authenticated()
+                    .requestMatchers("/api/comments/**")
+                    .authenticated()
+                    .requestMatchers("/api/favorites/**")
                     .authenticated()
                     .anyRequest()
                     .authenticated())

@@ -3,6 +3,8 @@ package com.marketplace.backend.controller;
 import com.marketplace.backend.dto.ProductRequest;
 import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
+@Tag(name = "Products", description = "Gestion du catalogue produits")
 public class ProductController {
 
   private final ProductService productService;
 
   @GetMapping
+  @Operation(summary = "Lister tous les produits (filtre optionnel par categorie)")
   public ResponseEntity<List<Product>> list(
       @RequestParam(required = false) String category) {
     if (category != null) {
@@ -35,40 +39,28 @@ public class ProductController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detail d'un produit par ID")
   public ResponseEntity<Product> get(@PathVariable Long id) {
-    try {
-      return ResponseEntity.ok(productService.getById(id));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    return ResponseEntity.ok(productService.getById(id));
   }
 
   @PostMapping
+  @Operation(summary = "Creer un produit")
   public ResponseEntity<Product> create(@Valid @RequestBody ProductRequest req) {
-    try {
-      return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(req));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
+    return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(req));
   }
 
   @PutMapping("/{id}")
+  @Operation(summary = "Modifier un produit")
   public ResponseEntity<Product> update(
       @PathVariable Long id, @Valid @RequestBody ProductRequest req) {
-    try {
-      return ResponseEntity.ok(productService.update(id, req));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    return ResponseEntity.ok(productService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Supprimer un produit")
   public ResponseEntity<Void> delete(@PathVariable Long id) {
-    try {
-      productService.delete(id);
-      return ResponseEntity.noContent().build();
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    productService.delete(id);
+    return ResponseEntity.noContent().build();
   }
 }

@@ -3,6 +3,8 @@ package com.marketplace.backend.controller;
 import com.marketplace.backend.dto.StockItemRequest;
 import com.marketplace.backend.entity.StockItem;
 import com.marketplace.backend.service.StockItemService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/stock-items")
 @RequiredArgsConstructor
+@Tag(name = "Stock Items", description = "Gestion des articles en stock")
 public class StockItemController {
 
   private final StockItemService stockItemService;
 
   @GetMapping
+  @Operation(summary = "Lister les articles (filtre optionnel par productId ou companyId)")
   public ResponseEntity<List<StockItem>> list(
       @RequestParam(required = false) Long productId,
       @RequestParam(required = false) Long companyId) {
@@ -39,40 +43,28 @@ public class StockItemController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detail d'un article en stock par ID")
   public ResponseEntity<StockItem> get(@PathVariable Long id) {
-    try {
-      return ResponseEntity.ok(stockItemService.getById(id));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    return ResponseEntity.ok(stockItemService.getById(id));
   }
 
   @PostMapping
+  @Operation(summary = "Creer un article en stock")
   public ResponseEntity<StockItem> create(@Valid @RequestBody StockItemRequest req) {
-    try {
-      return ResponseEntity.status(HttpStatus.CREATED).body(stockItemService.create(req));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
+    return ResponseEntity.status(HttpStatus.CREATED).body(stockItemService.create(req));
   }
 
   @PutMapping("/{id}")
+  @Operation(summary = "Modifier un article en stock")
   public ResponseEntity<StockItem> update(
       @PathVariable Long id, @Valid @RequestBody StockItemRequest req) {
-    try {
-      return ResponseEntity.ok(stockItemService.update(id, req));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    return ResponseEntity.ok(stockItemService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Supprimer un article en stock")
   public ResponseEntity<Void> delete(@PathVariable Long id) {
-    try {
-      stockItemService.delete(id);
-      return ResponseEntity.noContent().build();
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    stockItemService.delete(id);
+    return ResponseEntity.noContent().build();
   }
 }

@@ -1,6 +1,6 @@
 package com.marketplace.backend.service;
 
-import com.marketplace.backend.dto.CreateListingRequest;
+import com.marketplace.backend.dto.MarketplaceListingRequest;
 import com.marketplace.backend.dto.ListingDto;
 import com.marketplace.backend.dto.ListingModerationRequest;
 import com.marketplace.backend.entity.Enterprise;
@@ -66,7 +66,7 @@ public class ListingService {
   }
 
   @Transactional
-  public ListingDto create(Authentication auth, CreateListingRequest req) {
+  public ListingDto create(Authentication auth, MarketplaceListingRequest req) {
     Enterprise e = resolveEnterpriseForWrite(auth, req.getEnterpriseId());
     Listing l =
         Listing.builder()
@@ -85,7 +85,7 @@ public class ListingService {
   }
 
   @Transactional
-  public ListingDto update(Long id, Authentication auth, CreateListingRequest req) {
+  public ListingDto update(Long id, Authentication auth, MarketplaceListingRequest req) {
     User u = securityUserHelper.requireUser(auth);
     Listing l = listingRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Not found"));
     if (req.getEnterpriseId() != null) {

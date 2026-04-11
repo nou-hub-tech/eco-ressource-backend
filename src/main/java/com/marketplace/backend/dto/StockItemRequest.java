@@ -1,6 +1,8 @@
 package com.marketplace.backend.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.time.LocalDate;
 import lombok.Data;
 
@@ -17,7 +19,9 @@ public class StockItemRequest {
 
   private String location;
 
-  @NotNull private Integer quantity;
+  @NotNull(message = "La quantite est obligatoire")
+  @Positive(message = "La quantite doit etre strictement positive")
+  private Integer quantity;
 
   private String status;
 
@@ -25,5 +29,7 @@ public class StockItemRequest {
 
   private Long idProduct;
 
-  @NotNull private Double unitPrice;
+  @NotNull(message = "Le prix unitaire est obligatoire")
+  @PositiveOrZero(message = "Le prix unitaire doit etre positif ou nul")
+  private Double unitPrice;
 }
