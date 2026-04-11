@@ -1,0 +1,8 @@
+target/ 
+uploads/ 
+application.properties 
+.idea/ 
+*.iml 
+*.log 
+.DS_Store 
+Thumbs.db 
