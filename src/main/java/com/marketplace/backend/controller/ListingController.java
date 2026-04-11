@@ -1,6 +1,6 @@
 package com.marketplace.backend.controller;
 
-import com.marketplace.backend.dto.CreateListingRequest;
+import com.marketplace.backend.dto.MarketplaceListingRequest;
 import com.marketplace.backend.dto.ListingDto;
 import com.marketplace.backend.dto.ListingModerationRequest;
 import com.marketplace.backend.service.ListingService;
@@ -57,7 +57,7 @@ public class ListingController {
   @PostMapping("/create")
   @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
   public ResponseEntity<ListingDto> create(
-      Authentication auth, @Valid @RequestBody CreateListingRequest req) {
+      Authentication auth, @Valid @RequestBody MarketplaceListingRequest req) {
     try {
       return ResponseEntity.status(HttpStatus.CREATED).body(listingService.create(auth, req));
     } catch (IllegalArgumentException e) {
@@ -68,7 +68,7 @@ public class ListingController {
   @PutMapping("/{id}")
   @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
   public ResponseEntity<ListingDto> update(
-      @PathVariable Long id, Authentication auth, @Valid @RequestBody CreateListingRequest req) {
+      @PathVariable Long id, Authentication auth, @Valid @RequestBody MarketplaceListingRequest req) {
     try {
       return ResponseEntity.ok(listingService.update(id, auth, req));
     } catch (IllegalArgumentException e) {

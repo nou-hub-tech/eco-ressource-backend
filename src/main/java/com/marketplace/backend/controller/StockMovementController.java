@@ -3,6 +3,8 @@ package com.marketplace.backend.controller;
 import com.marketplace.backend.dto.StockMovementRequest;
 import com.marketplace.backend.entity.StockMovement;
 import com.marketplace.backend.service.StockMovementService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/stock-movements")
 @RequiredArgsConstructor
+@Tag(name = "Stock Movements", description = "Suivi des mouvements de stock (IN, OUT, UPDATE)")
 public class StockMovementController {
 
   private final StockMovementService stockMovementService;
 
   @GetMapping
+  @Operation(summary = "Lister les mouvements (filtre optionnel par stockItemId)")
   public ResponseEntity<List<StockMovement>> list(
       @RequestParam(required = false) Long stockItemId) {
     if (stockItemId != null) {
@@ -35,40 +39,28 @@ public class StockMovementController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detail d'un mouvement par ID")
   public ResponseEntity<StockMovement> get(@PathVariable Long id) {
-    try {
-      return ResponseEntity.ok(stockMovementService.getById(id));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    return ResponseEntity.ok(stockMovementService.getById(id));
   }
 
   @PostMapping
+  @Operation(summary = "Creer un mouvement de stock")
   public ResponseEntity<StockMovement> create(@Valid @RequestBody StockMovementRequest req) {
-    try {
-      return ResponseEntity.status(HttpStatus.CREATED).body(stockMovementService.create(req));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
+    return ResponseEntity.status(HttpStatus.CREATED).body(stockMovementService.create(req));
   }
 
   @PutMapping("/{id}")
+  @Operation(summary = "Modifier un mouvement de stock")
   public ResponseEntity<StockMovement> update(
       @PathVariable Long id, @Valid @RequestBody StockMovementRequest req) {
-    try {
-      return ResponseEntity.ok(stockMovementService.update(id, req));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    return ResponseEntity.ok(stockMovementService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Supprimer un mouvement de stock")
   public ResponseEntity<Void> delete(@PathVariable Long id) {
-    try {
-      stockMovementService.delete(id);
-      return ResponseEntity.noContent().build();
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
+    stockMovementService.delete(id);
+    return ResponseEntity.noContent().build();
   }
 }
