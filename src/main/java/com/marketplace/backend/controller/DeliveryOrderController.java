@@ -96,7 +96,7 @@ public class DeliveryOrderController {
         return deliveryOrderService.sortByNomClient(order);
     }
 
-    // ==================== STATISTIQUES ====================
+    // ================= STATISTIQUES =================
 
     @GetMapping("/statistiques")
     public Map<String, Object> getStatistiques() {
@@ -140,7 +140,7 @@ public class DeliveryOrderController {
                     "    </style>\n" +
                     "</head>\n" +
                     "<body>\n" +
-                    "    <div class='success'>✅</div>\n" +
+                    "    <div class='success'></div>\n" +
                     "    <div class='message'>Commande #" + id + " marquée comme livrée avec succès!</div>\n" +
                     "    <p>Fermez cette page pour continuer.</p>\n" +
                     "</body>\n" +
