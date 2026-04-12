@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fonds Libérés — EcoRessource B2B</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: #f0f4f8;
+      color: #1a202c;
+    }
+    .wrapper {
+      max-width: 620px;
+      margin: 32px auto;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    }
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+      padding: 36px 40px 28px;
+      text-align: center;
+    }
+    .header .logo-text {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+    .header .logo-dot {
+      color: #6ee7b7;
+    }
+    .header .badge {
+      display: inline-block;
+      margin-top: 16px;
+      background: rgba(255,255,255,0.18);
+      border: 1.5px solid rgba(255,255,255,0.35);
+      border-radius: 100px;
+      padding: 6px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #d1fae5;
+      letter-spacing: 0.5px;
+    }
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
+      padding: 32px 40px 24px;
+      text-align: center;
+    }
+    .hero .icon {
+      font-size: 52px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .hero h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #065f46;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      font-size: 15px;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+    /* ── Montant ── */
+    .amount-card {
+      margin: 0 40px 28px;
+      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+      border-radius: 14px;
+      padding: 28px 32px;
+      text-align: center;
+    }
+    .amount-card .label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #a7f3d0;
+      margin-bottom: 8px;
+    }
+    .amount-card .amount {
+      font-size: 42px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1;
+    }
+    .amount-card .currency {
+      font-size: 20px;
+      font-weight: 600;
+      color: #6ee7b7;
+      margin-left: 6px;
+    }
+    /* ── Détails ── */
+    .details {
+      margin: 0 40px 28px;
+    }
+    .details h2 {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #718096;
+      margin-bottom: 14px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-row .key {
+      font-size: 14px;
+      color: #718096;
+      font-weight: 500;
+    }
+    .detail-row .val {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a202c;
+      text-align: right;
+    }
+    .detail-row .val.green {
+      color: #059669;
+    }
+    /* ── Info Box ── */
+    .info-box {
+      margin: 0 40px 28px;
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+    .info-box p {
+      font-size: 14px;
+      color: #1e40af;
+      line-height: 1.6;
+    }
+    /* ── CTA ── */
+    .cta {
+      text-align: center;
+      padding: 0 40px 32px;
+    }
+    .cta p {
+      font-size: 14px;
+      color: #4a5568;
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #065f46, #059669);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 36px;
+      border-radius: 100px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    /* ── Footer ── */
+    .footer {
+      background: #f7fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 24px 40px;
+      text-align: center;
+    }
+    .footer p {
+      font-size: 12px;
+      color: #a0aec0;
+      line-height: 1.7;
+    }
+    .footer a {
+      color: #059669;
+      text-decoration: none;
+    }
+    .footer .divider {
+      margin: 12px auto;
+      width: 40px;
+      height: 2px;
+      background: #e2e8f0;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="logo-text">Eco<span class="logo-dot">●</span>Ressource B2B</div>
+    <div class="badge">🔔 Notification Financière Automatique</div>
+  </div>
+
+  <!-- ── Hero ── -->
+  <div class="hero">
+    <div class="icon">✅</div>
+    <h1>Fonds Libérés avec Succès</h1>
+    <p>
+      Bonjour <strong th:text="${recipientName}">Responsable Financier</strong>,<br/>
+      La livraison a été confirmée et les fonds escrow ont été libérés.
+    </p>
+  </div>
+
+  <!-- ── Montant ── -->
+  <div class="amount-card">
+    <div class="label">Montant Libéré</div>
+    <div class="amount">
+      <span th:text="${amount}">0,00</span>
+      <span class="currency">TND</span>
+    </div>
+  </div>
+
+  <!-- ── Détails ── -->
+  <div class="details">
+    <h2>Détails de la Transaction</h2>
+
+    <div class="detail-row">
+      <span class="key">📦 Projet / Commande</span>
+      <span class="val" th:text="${projectName}">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="key">🔑 Référence Escrow</span>
+      <span class="val">#<span th:text="${escrowId}">0</span></span>
+    </div>
+    <div class="detail-row">
+      <span class="key">📅 Date de Libération</span>
+      <span class="val" th:text="${releasedAt}">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="key">✅ Statut</span>
+      <span class="val green">RELEASED — Fonds Disponibles</span>
+    </div>
+  </div>
+
+  <!-- ── Info Box ── -->
+  <div class="info-box">
+    <p>
+      ℹ️ <strong>Information :</strong> Les fonds ont été libérés de l'escrow suite à la confirmation
+      de livraison. Le montant de <strong th:text="${amount + ' TND'}">0,00 TND</strong>
+      est maintenant disponible dans votre trésorerie.
+    </p>
+  </div>
+
+  <!-- ── CTA ── -->
+  <div class="cta">
+    <p>Consultez votre tableau de bord financier pour visualiser<br/>les détails complets de cette transaction.</p>
+    <a href="http://localhost:4200/enterprise/treasury" class="cta-button">
+      Voir le Tableau de Bord →
+    </a>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="footer">
+    <p>
+      <strong>EcoRessource B2B</strong> — Plateforme B2B de gestion des ressources<br/>
+      Cet email est généré automatiquement, merci de ne pas y répondre.
+    </p>
+    <div class="divider"></div>
+    <p>
+      © 2026 EcoRessource B2B. Tous droits réservés.<br/>
+      <a href="http://localhost:4200">www.eco-ressource.com</a>
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
