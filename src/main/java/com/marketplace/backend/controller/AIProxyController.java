@@ -51,6 +51,9 @@ public class AIProxyController {
             return ResponseEntity.status(500).body(error);
         }
     }
+
+
+
     
     @GetMapping("/debug")
     public ResponseEntity<Map<String, Object>> debug() {
