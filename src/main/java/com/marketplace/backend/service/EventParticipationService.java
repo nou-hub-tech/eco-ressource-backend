@@ -57,6 +57,10 @@ public class EventParticipationService {
             .findById(req.getPlatformEventId())
             .orElseThrow(() -> new IllegalArgumentException("Platform event not found"));
 
+    if (eventParticipationRepository.existsByUserIdAndPlatformEventId(user.getId(), platformEvent.getId())) {
+      throw new IllegalArgumentException("User already participated in this event");
+    }
+
     EventParticipation eventParticipation =
         EventParticipation.builder().user(user).platformEvent(platformEvent).build();
 
