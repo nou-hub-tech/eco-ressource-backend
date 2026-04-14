@@ -52,10 +52,8 @@ public class AIProxyController {
         }
     }
 
-
-
-
     
+
     @GetMapping("/debug")
     public ResponseEntity<Map<String, Object>> debug() {
         Map<String, Object> debug = new HashMap<>();
