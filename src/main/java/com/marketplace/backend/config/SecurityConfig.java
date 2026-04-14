@@ -59,7 +59,9 @@ public class SecurityConfig {
         .authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/auth/**", "/error")
+                auth.requestMatchers("/api/auth/**", "/error", "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/listings/create")
                     .hasAnyRole("ENTERPRISE", "ADMIN")

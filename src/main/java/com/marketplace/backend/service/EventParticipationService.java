@@ -21,8 +21,24 @@ public class EventParticipationService {
   private final PlatformEventRepository platformEventRepository;
 
   @Transactional(readOnly = true)
-  public List<EventParticipation> findAll() {
-    return eventParticipationRepository.findAll();
+  public List<EventParticipation> findAll(String userId) {
+    if (userId == null) {
+      return eventParticipationRepository.findAll();
+    }
+
+    String trimmedUserId = userId.trim();
+    if (trimmedUserId.isEmpty()) {
+      return eventParticipationRepository.findAll();
+    }
+
+    Long parsedUserId;
+    try {
+      parsedUserId = Long.parseLong(trimmedUserId);
+    } catch (NumberFormatException e) {
+      return eventParticipationRepository.findAll();
+    }
+
+    return eventParticipationRepository.findByUserId(parsedUserId);
   }
 
   @Transactional(readOnly = true)

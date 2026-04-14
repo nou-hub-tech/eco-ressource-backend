@@ -9,4 +9,6 @@ public interface EventParticipationRepository extends JpaRepository<EventPartici
   long countByPlatformEventId(Long platformEventId);
 
   List<EventParticipation> findByPlatformEventId(Long platformEventId);
+
+  List<EventParticipation> findByUserId(Long userId);
 }
