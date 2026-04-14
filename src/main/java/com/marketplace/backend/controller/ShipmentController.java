@@ -59,7 +59,7 @@ public class ShipmentController {
         return shipmentService.getShipmentsByStatut(statut);
     }
 
-    // ============= NOUVEAUX ENDPOINTS =============
+    // =========== NOUVEAUX ENDPOINTS ===========
 
     // ✅ RECHERCHE par produit
     @GetMapping("/search/produit")
@@ -89,7 +89,7 @@ public class ShipmentController {
         return shipmentService.rechercheAvancee(produitId, quantite, statut, date);
     }
 
-    // =============== TRI ====================
+    // ============= TRI ===============
 
     // ✅ TRI par date de départ
     @GetMapping("/sort/date")
