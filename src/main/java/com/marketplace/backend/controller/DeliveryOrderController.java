@@ -118,7 +118,7 @@ public class DeliveryOrderController {
         return deliveryOrderService.getStatistiquesParAnnee();
     }
 
-    // ==================== QR CODE ====================
+    // =========== QR CODE ============
     @GetMapping("/update-by-qr/{id}")
     public ResponseEntity<String> updateByQrCode(@PathVariable Long id) {
         DeliveryOrder order = deliveryOrderService.retrieveDeliveryOrder(id);
