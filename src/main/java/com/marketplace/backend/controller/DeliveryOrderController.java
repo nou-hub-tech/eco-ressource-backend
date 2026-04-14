@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/delivery-orders")
-@CrossOrigin(origins = "http://localhost:4200")
+
 public class DeliveryOrderController {
 
     private final IDeliveryOrderService deliveryOrderService;
@@ -21,7 +21,7 @@ public class DeliveryOrderController {
         this.deliveryOrderService = deliveryOrderService;
     }
 
-    // ==================== CRUD EXISTANTS ====================
+    // ============ CRUD EXISTANTS ==============
 
     @PostMapping("/add")
     public DeliveryOrder addDeliveryOrder(@RequestBody DeliveryOrder d) {

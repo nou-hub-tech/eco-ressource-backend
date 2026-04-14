@@ -61,6 +61,10 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers("/api/auth/**")
                     .permitAll()
+                    // ✅ AJOUTER LES ENDPOINTS DE GESTION LIVRAISON
+                    .requestMatchers("/api/delivery-orders/**").permitAll()
+                    .requestMatchers("/api/shipments/**").permitAll()
+                    .requestMatchers("/api/dashboard/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/listings/create")
                     .hasAnyRole("ENTERPRISE", "ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/transport-offers")
