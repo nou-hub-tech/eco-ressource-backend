@@ -119,7 +119,6 @@ public class DeliveryOrderController {
     }
 
     // ==================== QR CODE ====================
-
     @GetMapping("/update-by-qr/{id}")
     public ResponseEntity<String> updateByQrCode(@PathVariable Long id) {
         DeliveryOrder order = deliveryOrderService.retrieveDeliveryOrder(id);
@@ -138,11 +137,21 @@ public class DeliveryOrderController {
                     "        .success { color: green; font-size: 48px; }\n" +
                     "        .message { font-size: 24px; margin-top: 20px; }\n" +
                     "    </style>\n" +
+                    "    <script>\n" +
+                    "        // Envoyer un message à la page originale\n" +
+                    "        if (window.opener) {\n" +
+                    "            window.opener.postMessage('orderUpdated', '*');\n" +
+                    "        }\n" +
+                    "        // Redirection après 2 secondes\n" +
+                    "        setTimeout(function() {\n" +
+                    "            window.close();\n" +
+                    "        }, 2000);\n" +
+                    "    </script>\n" +
                     "</head>\n" +
                     "<body>\n" +
-                    "    <div class='success'></div>\n" +
+                    "    <div class='success'>✅</div>\n" +
                     "    <div class='message'>Commande #" + id + " marquée comme livrée avec succès!</div>\n" +
-                    "    <p>Fermez cette page pour continuer.</p>\n" +
+                    "    <p>Cette page se fermera automatiquement...</p>\n" +
                     "</body>\n" +
                     "</html>";
 
