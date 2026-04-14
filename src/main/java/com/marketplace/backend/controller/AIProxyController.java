@@ -50,6 +50,11 @@ public class AIProxyController {
             error.put("error", e.getMessage());
             return ResponseEntity.status(500).body(error);
         }
+
+
+
+
+        
     }
     @GetMapping("/debug")
     public ResponseEntity<Map<String, Object>> debug() {
