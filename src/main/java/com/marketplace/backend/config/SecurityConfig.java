@@ -59,22 +59,24 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider)
-            .authorizeHttpRequests(
-                    auth ->
-                            auth.requestMatchers("/api/auth/**").permitAll()
-                                    .requestMatchers("/files/**").permitAll()
-                                    .requestMatchers("/ai/**").permitAll()  // ← ADD THIS LINE
-                                    .requestMatchers(HttpMethod.POST, "/api/listings/create")
-                                    .hasAnyRole("ENTERPRISE", "ADMIN")
-                                    .requestMatchers(HttpMethod.POST, "/api/transport/offer")
-                                    .hasAnyRole("TRANSPORTER", "ADMIN")
-                                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                    .requestMatchers("/api/users/**").hasRole("ADMIN")
-                                    .requestMatchers("/api/listings/**").authenticated()
-                                    .requestMatchers("/api/transport/**").authenticated()
-                                    .anyRequest().authenticated())
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/files/**").permitAll()
+                    .requestMatchers("/stockitem/**").permitAll()
+                    .requestMatchers("/stock-movement/**").permitAll()
+                    .requestMatchers("/product/**").permitAll()
+                    .requestMatchers("/ai/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/listings/create")
+                    .hasAnyAuthority("ENTERPRISE", "ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/transport/offer")
+                    .hasAnyAuthority("TRANSPORTER", "ADMIN")
+                    .requestMatchers("/api/admin/stock/**").permitAll()
+                    .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                    .requestMatchers("/api/users/**").hasAuthority("ADMIN")
+                    .requestMatchers("/api/listings/**").authenticated()
+                    .requestMatchers("/api/transport/**").authenticated()
+                    .anyRequest().authenticated())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
-
 }

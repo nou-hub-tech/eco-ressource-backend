@@ -1,7 +1,6 @@
 package com.marketplace.backend.entity;
 
 import jakarta.persistence.*;
-
 import java.util.Date;
 
 @Entity
@@ -10,7 +9,7 @@ public class StockItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_stock")
-    private Long id_stock;
+    private Long idStock;
 
     private int quantity;
     private double unitPrice;
@@ -19,7 +18,7 @@ public class StockItem {
     private String unit;
 
     @Column(name = "item_condition")
-    private String condition;  // ← only ONE declaration, not two
+    private String condition;
 
     private String image;
 
@@ -30,10 +29,18 @@ public class StockItem {
     @JoinColumn(name = "id_product")
     private Product product;
 
+    @Column(nullable = false)
+    private boolean deleted = false;  // ✅ ADD THIS
+
     // GETTERS & SETTERS
 
-    public Long getId_stock() { return id_stock; }
-    public void setId_stock(Long id_stock) { this.id_stock = id_stock; }
+    public Long getIdStock() {
+        return idStock;
+    }
+
+    public void setIdStock(Long idStock) {
+        this.idStock = idStock;
+    }
 
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
@@ -52,6 +59,7 @@ public class StockItem {
 
     public String getCondition() { return condition; }
     public void setCondition(String condition) { this.condition = condition; }
+
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
 
@@ -60,4 +68,7 @@ public class StockItem {
 
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
+
+    public boolean isDeleted() { return deleted; }  // ✅ ADD THIS
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }  // ✅ ADD THIS
 }

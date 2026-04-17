@@ -23,7 +23,7 @@ public class StockMovementServiceImpl implements IStockMovementService {
 
     @Override
     public List<StockMovement> getHistoryByStockItem(Long idStock) {
-        return movementRepo.findByStockItemId(idStock);  // ← updated method name
+        return movementRepo.findByStockItem_IdStock(idStock);
     }
 
     @Override
@@ -42,7 +42,16 @@ public class StockMovementServiceImpl implements IStockMovementService {
         movement.setDescription(description);
         movement.setMovementDate(new Date());
         movement.setStockItem(stockItem);
+
+        // ✅ Set status based on movement type
+        if ("DELETED".equals(type)) {
+            movement.setStatus("DELETED");
+        } else if ("RESTORED".equals(type)) {
+            movement.setStatus("RESTORED");
+        } else {
+            movement.setStatus("ACTIVE");
+        }
+
         movementRepo.save(movement);
     }
-
 }

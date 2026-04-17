@@ -1,5 +1,7 @@
 package com.marketplace.backend.controller;
 
+import com.marketplace.backend.dto.StockStatsDTO;
+import com.marketplace.backend.service.AdvancedStatsService;
 import jakarta.validation.Valid;
 import com.marketplace.backend.entity.StockItem;
 import com.marketplace.backend.service.IProductService;
@@ -9,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
@@ -25,10 +28,14 @@ public class StockItemRestController {
 
     private final IStockItemService stockItemService;
     private final IProductService productService;
+    private final AdvancedStatsService advancedStatsService ;
 
-    public StockItemRestController(IStockItemService stockItemService, IProductService productService) {
+    public StockItemRestController(IStockItemService stockItemService, IProductService productService,AdvancedStatsService advancedStatsService
+                               ) {
         this.stockItemService = stockItemService;
         this.productService = productService;
+        this.advancedStatsService = advancedStatsService;
+
     }
 
     @GetMapping("/retrieve-all-stockitems")
@@ -50,10 +57,10 @@ public class StockItemRestController {
     }
 
     @DeleteMapping("/remove-stockitem/{id_stock}")
+    @PreAuthorize("permitAll()")
     public void deleteStockItem(@PathVariable Long id_stock) {
         stockItemService.removeStockItem(id_stock);
     }
-
     @PutMapping("/assign-stockitem-to-product/{id_stock}/{id_product}")
     public StockItem assignStockItemToProduct(@PathVariable Long id_stock,
                                               @PathVariable Long id_product) {
@@ -161,5 +168,9 @@ public class StockItemRestController {
             errors.put(field, message);
         });
         return ResponseEntity.badRequest().body(errors);
+    }
+    @GetMapping("/advanced-stats")
+    public ResponseEntity<StockStatsDTO> getAdvancedStatistics() {
+        return ResponseEntity.ok(advancedStatsService.getAdvancedStatistics());
     }
 }
