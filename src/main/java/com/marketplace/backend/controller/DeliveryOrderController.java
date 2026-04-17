@@ -21,7 +21,7 @@ public class DeliveryOrderController {
         this.deliveryOrderService = deliveryOrderService;
     }
 
-    // ============ CRUD EXISTANTS ==============
+    // ========== CRUD EXISTANTS ============
 
     @PostMapping("/add")
     public DeliveryOrder addDeliveryOrder(@RequestBody DeliveryOrder d) {
@@ -96,7 +96,7 @@ public class DeliveryOrderController {
         return deliveryOrderService.sortByNomClient(order);
     }
 
-    // ============== STATISTIQUES =================
+    // =========== STATISTIQUES ==============
 
     @GetMapping("/statistiques")
     public Map<String, Object> getStatistiques() {
