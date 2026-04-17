@@ -22,7 +22,7 @@ public class ShipmentController {
         this.shipmentService = shipmentService;
     }
 
-    // ======= CRUD EXISTANTS ========
+    // ====== CRUD EXISTANTS ========
 
     @PostMapping("/add")
     public Shipment addShipment(@RequestBody Shipment s) {
