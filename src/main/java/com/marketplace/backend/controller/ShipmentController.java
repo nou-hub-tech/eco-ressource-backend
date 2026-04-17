@@ -59,7 +59,7 @@ public class ShipmentController {
         return shipmentService.getShipmentsByStatut(statut);
     }
 
-    // ======== NOUVEAUX ENDPOINTS ========
+    // ======= NOUVEAUX ENDPOINTS =======
 
     //  RECHERCHE par produit
     @GetMapping("/search/produit")
@@ -103,7 +103,7 @@ public class ShipmentController {
         return shipmentService.sortByQuantite(order);
     }
 
-    // ==================== STATISTIQUES ====================
+    // ============== STATISTIQUES ==========
 
     //  STATISTIQUES générales
     @GetMapping("/statistiques")
