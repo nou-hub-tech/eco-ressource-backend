@@ -21,7 +21,7 @@ public class DeliveryOrderController {
         this.deliveryOrderService = deliveryOrderService;
     }
 
-    // ========== CRUD EXISTANTS ============
+    // ======== CRUD EXISTANTS ==========
 
     @PostMapping("/add")
     public DeliveryOrder addDeliveryOrder(@RequestBody DeliveryOrder d) {
@@ -58,7 +58,7 @@ public class DeliveryOrderController {
         return deliveryOrderService.getDeliveryOrdersByStatut(statut);
     }
 
-    // ==================== RECHERCHE ====================
+    // ================ RECHERCHE ====================
 
     @GetMapping("/search/nom")
     public List<DeliveryOrder> searchByNomClient(@RequestParam String nomClient) {
@@ -84,7 +84,7 @@ public class DeliveryOrderController {
         return deliveryOrderService.rechercheAvancee(nomClient, adresse, statut, date);
     }
 
-    // ==================== TRI ====================
+    // ================ TRI ====================
 
     @GetMapping("/sort/date")
     public List<DeliveryOrder> sortByDate(@RequestParam(defaultValue = "desc") String order) {
@@ -118,7 +118,7 @@ public class DeliveryOrderController {
         return deliveryOrderService.getStatistiquesParAnnee();
     }
 
-    // ========= QR CODE ============
+    // ========= QR CODE ==========
     @GetMapping("/update-by-qr/{id}")
     public ResponseEntity<String> updateByQrCode(@PathVariable Long id) {
         DeliveryOrder order = deliveryOrderService.retrieveDeliveryOrder(id);
