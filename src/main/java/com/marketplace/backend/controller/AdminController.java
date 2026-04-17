@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
   
-
   private final UserService userService;
   private final ListingService listingService;
 
