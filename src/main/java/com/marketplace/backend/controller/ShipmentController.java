@@ -61,25 +61,25 @@ public class ShipmentController {
 
     // =========== NOUVEAUX ENDPOINTS ===========
 
-    // ✅ RECHERCHE par produit
+    //  RECHERCHE par produit
     @GetMapping("/search/produit")
     public List<Shipment> searchByProduit(@RequestParam Long produitId) {
         return shipmentService.findByProduitId(produitId);
     }
 
-    // ✅ RECHERCHE par quantité (NOUVEAU)
+    //  RECHERCHE par quantité (NOUVEAU)
     @GetMapping("/search/quantite")
     public List<Shipment> searchByQuantite(@RequestParam Double quantite) {
         return shipmentService.findByQuantite(quantite);
     }
 
-    // ✅ RECHERCHE par date (exacte)
+    //  RECHERCHE par date (exacte)
     @GetMapping("/search/date")
     public List<Shipment> searchByDate(@RequestParam String date) {
         return shipmentService.findByDate(date);
     }
 
-    // ✅ RECHERCHE AVANCÉE (multi-critères)
+    //  RECHERCHE AVANCÉE (multi-critères)
     @GetMapping("/recherche")
     public List<Shipment> rechercheAvancee(
             @RequestParam(required = false) Long produitId,
@@ -91,13 +91,13 @@ public class ShipmentController {
 
     // ============= TRI ===============
 
-    // ✅ TRI par date de départ
+    //  TRI par date de départ
     @GetMapping("/sort/date")
     public List<Shipment> sortByDate(@RequestParam(defaultValue = "desc") String order) {
         return shipmentService.sortByDate(order);
     }
 
-    // ✅ TRI par quantité
+    //  TRI par quantité
     @GetMapping("/sort/quantite")
     public List<Shipment> sortByQuantite(@RequestParam(defaultValue = "desc") String order) {
         return shipmentService.sortByQuantite(order);
@@ -105,25 +105,25 @@ public class ShipmentController {
 
     // ==================== STATISTIQUES ====================
 
-    // ✅ STATISTIQUES générales
+    //  STATISTIQUES générales
     @GetMapping("/statistiques")
     public Map<String, Object> getStatistiques() {
         return shipmentService.getStatistiques();
     }
 
-    // ✅ STATISTIQUES par commande
+    //  STATISTIQUES par commande
     @GetMapping("/statistiques/commande/{deliveryOrderId}")
     public Map<String, Object> getStatistiquesByCommande(@PathVariable Long deliveryOrderId) {
         return shipmentService.getStatistiquesByCommande(deliveryOrderId);
     }
 
-    // ✅ STATISTIQUES par jour
+    //  STATISTIQUES par jour
     @GetMapping("/statistiques/jour")
     public Map<String, Long> getStatistiquesParJour() {
         return shipmentService.getStatistiquesParJour();
     }
 
-    // ✅ STATISTIQUES par mois
+    //  STATISTIQUES par mois
     @GetMapping("/statistiques/mois")
     public Map<String, Long> getStatistiquesParMois() {
         return shipmentService.getStatistiquesParMois();
