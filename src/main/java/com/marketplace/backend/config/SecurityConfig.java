@@ -70,13 +70,16 @@ public class SecurityConfig {
                     .hasAnyAuthority("ENTERPRISE", "ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/transport/offer")
                     .hasAnyAuthority("TRANSPORTER", "ADMIN")
-                    .requestMatchers("/api/admin/stock/**").permitAll()
                     .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                     .requestMatchers("/api/users/**").hasAuthority("ADMIN")
                     .requestMatchers("/api/listings/**").authenticated()
                     .requestMatchers("/api/transport/**").authenticated()
+                    .requestMatchers("/api/enterprise/**").authenticated()
                     .anyRequest().authenticated())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
+
+
+    
   }
 }

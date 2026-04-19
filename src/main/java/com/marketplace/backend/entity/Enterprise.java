@@ -1,5 +1,6 @@
 package com.marketplace.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,6 +34,8 @@ public class Enterprise {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  // ✅ Dans Enterprise.java
+  @JsonIgnore   // ← ajoute cette ligne
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false, unique = true)
   private User user;

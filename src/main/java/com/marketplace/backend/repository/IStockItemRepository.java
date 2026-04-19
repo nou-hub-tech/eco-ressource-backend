@@ -105,5 +105,26 @@ public interface IStockItemRepository extends JpaRepository<StockItem, Long> {
 
     @Query("SELECT m.movementType, COUNT(m) FROM StockMovement m GROUP BY m.movementType")
     List<Object[]> getMovementsByType();
+    // Stock d'une entreprise (liste)
+    @Query("SELECT s FROM StockItem s WHERE s.enterprise.id = :enterpriseId AND s.deleted = false")
+    List<StockItem> findByEnterpriseId(@Param("enterpriseId") Long enterpriseId);
 
+    // Stock d'une entreprise (paginé)
+    @Query("SELECT s FROM StockItem s WHERE s.enterprise.id = :enterpriseId AND s.deleted = false")
+    Page<StockItem> findByEnterpriseId(@Param("enterpriseId") Long enterpriseId, Pageable pageable);
+
+    // Recherche filtrée
+    @Query("""
+    SELECT s FROM StockItem s
+    WHERE s.enterprise.id = :enterpriseId AND s.deleted = false
+      AND (:status IS NULL OR LOWER(s.status) LIKE LOWER(CONCAT('%', :status, '%')))
+      AND (:productName IS NULL OR LOWER(s.product.name) LIKE LOWER(CONCAT('%', :productName, '%')))
+""")
+    List<StockItem> searchByEnterprise(@Param("enterpriseId") Long enterpriseId,
+                                       @Param("status") String status,
+                                       @Param("productName") String productName);
+
+    // Valeur totale du stock d'une entreprise
+    @Query("SELECT COALESCE(SUM(s.quantity * s.unitPrice), 0) FROM StockItem s WHERE s.enterprise.id = :enterpriseId AND s.deleted = false")
+    Double calculateTotalStockValueByEnterprise(@Param("enterpriseId") Long enterpriseId);
 }

@@ -1,5 +1,6 @@
 package com.marketplace.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.Date;
 
@@ -31,7 +32,14 @@ public class StockItem {
 
     @Column(nullable = false)
     private boolean deleted = false;  // ✅ ADD THIS
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enterprise_id")
+    private Enterprise enterprise;
 
+    // + getter et setter
+    public Enterprise getEnterprise() { return enterprise; }
+    public void setEnterprise(Enterprise enterprise) { this.enterprise = enterprise; }
     // GETTERS & SETTERS
 
     public Long getIdStock() {

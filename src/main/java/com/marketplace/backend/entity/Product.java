@@ -34,9 +34,18 @@ public class Product {
 
     private String barcode;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enterprise_id")
+    @JsonIgnore
     private Enterprise enterprise;
+
+    public Enterprise getEnterprise() { return enterprise; }
+    public void setEnterprise(Enterprise enterprise) { this.enterprise = enterprise; }
+
+    // Expose juste l'ID en JSON (sans boucle infinie)
+    public Long getEnterpriseId() {
+        return enterprise != null ? enterprise.getId() : null;
+    }
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     @JsonIgnore
