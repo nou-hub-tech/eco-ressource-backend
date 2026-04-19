@@ -103,7 +103,7 @@ public class ShipmentController {
         return shipmentService.sortByQuantite(order);
     }
 
-    // ======= STATISTIQUES ==========
+    // ====== STATISTIQUES =========
 
     //  STATISTIQUES générales
     @GetMapping("/statistiques")
