@@ -29,12 +29,11 @@ public class Invoice {
     @Column(name = "amount_ttc", nullable = false)
     private Double amountTTC;
     @Column(name = "status", nullable = false)
-    private String status = "UNPAID"; 
+    private String status = "UNPAID";
     private String issueDate;
 
     private Long deliveryOrderId;
     private Long linkedEscrowId;
     private String deliveredAt;
-    // Lien vers stock_item
     private Long idStock;
 }

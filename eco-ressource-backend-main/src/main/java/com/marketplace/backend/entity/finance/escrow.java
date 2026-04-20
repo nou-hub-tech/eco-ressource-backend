@@ -20,7 +20,7 @@ public class escrow {
     private EscrowStatus status;
     private String createdAt;
     private String releaseDate;
-    private Long deliveryOrderId;     // lien futur avec livraison
-    private Long linkedInvoiceId;     // lien vers la facture associée
-    private Long idStock;             // lien vers stock_item (optionnel
+    private Long deliveryOrderId;
+    private Long linkedInvoiceId;
+    private Long idStock;             
 }
