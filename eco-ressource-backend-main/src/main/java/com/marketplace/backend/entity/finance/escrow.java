@@ -22,5 +22,5 @@ public class escrow {
     private String releaseDate;
     private Long deliveryOrderId;
     private Long linkedInvoiceId;
-    private Long idStock;             
+    private Long idStock;
 }

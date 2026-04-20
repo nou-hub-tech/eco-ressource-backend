@@ -16,19 +16,7 @@ public class FinancialAnalyticsController {
 
     private final FinancialAnalyticsService analyticsService;
 
-    /**
-     * 🤖 Rapport complet d'analyse financière intelligente
-     *
-     * GET /api/analytics/financial-health
-     *
-     * Retourne :
-     *  - healthScore    : score 0-100
-     *  - healthLevel    : EXCELLENT / BON / MOYEN / CRITIQUE
-     *  - kpis           : indicateurs calculés (taux recouvrement, flux net, etc.)
-     *  - cashFlowPredictions : prédictions sur 3 mois
-     *  - anomalies      : transactions anormales détectées (Z-Score)
-     *  - recommendations : conseils métier générés automatiquement
-     */
+    
     @GetMapping("/financial-health")
     public FinancialAnalyticsService.FinancialHealthReport getFinancialHealth() {
         return analyticsService.generateReport();
