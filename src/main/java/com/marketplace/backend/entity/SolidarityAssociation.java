@@ -58,5 +58,8 @@ public class SolidarityAssociation {
     if (createdAt == null) {
       createdAt = LocalDateTime.now();
     }
+    if (goalAmount == null) {
+      goalAmount = 0.0;
+    }
   }
 }
