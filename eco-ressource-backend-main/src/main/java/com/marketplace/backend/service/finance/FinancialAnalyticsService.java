@@ -40,14 +40,14 @@ public class FinancialAnalyticsService {
 
         FinancialHealthReport report = new FinancialHealthReport();
 
-        // 1️⃣ Score de santé financière
+
         report.setHealthScore(computeHealthScore(invoices, transactions));
         report.setHealthLevel(scoreToLevel(report.getHealthScore()));
 
-        // 2️⃣ Prédiction trésorerie 3 mois
+
         report.setCashFlowPredictions(predictCashFlow(transactions));
 
-        // 3️⃣ Détection d'anomalies
+       
         report.setAnomalies(detectAnomalies(transactions));
 
         // 4️⃣ KPIs calculés

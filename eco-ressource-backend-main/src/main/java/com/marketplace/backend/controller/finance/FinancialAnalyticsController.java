@@ -16,7 +16,7 @@ public class FinancialAnalyticsController {
 
     private final FinancialAnalyticsService analyticsService;
 
-    
+
     @GetMapping("/financial-health")
     public FinancialAnalyticsService.FinancialHealthReport getFinancialHealth() {
         return analyticsService.generateReport();
