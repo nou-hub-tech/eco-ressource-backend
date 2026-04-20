@@ -68,6 +68,7 @@ public class DonationService {
         .message(d.getMessage())
         .associationId(d.getAssociation() != null ? d.getAssociation().getId() : null)
         .userId(d.getUser() != null ? d.getUser().getId() : null)
+        .userName(d.getUser() != null ? d.getUser().getFullName() : null)
         .createdAt(d.getCreatedAt())
         .build();
   }

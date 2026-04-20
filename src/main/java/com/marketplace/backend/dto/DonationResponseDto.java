@@ -18,5 +18,6 @@ public class DonationResponseDto {
   private String message;
   private Long associationId;
   private Long userId;      // nullable
+  private String userName;  // nullable, to display on frontend
   private LocalDateTime createdAt;
 }
