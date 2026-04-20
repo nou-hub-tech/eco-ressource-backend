@@ -20,7 +20,7 @@ public class FinancingRequest {
     private Double amountRequested;
     private Double amountApproved;
 
-    private Double interestRate; 
+    private Double interestRate;
     private int durationMonths;
 
     @Enumerated(EnumType.STRING)

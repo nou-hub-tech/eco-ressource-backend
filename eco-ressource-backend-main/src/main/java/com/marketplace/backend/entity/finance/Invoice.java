@@ -29,9 +29,9 @@ public class Invoice {
     @Column(name = "amount_ttc", nullable = false)
     private Double amountTTC;
     @Column(name = "status", nullable = false)
-    private String status = "UNPAID"; // PAID / UNPAID
+    private String status = "UNPAID"; 
     private String issueDate;
-    // Liaison livraison (nullable — rempli lors intégration)
+
     private Long deliveryOrderId;
     private Long linkedEscrowId;
     private String deliveredAt;
