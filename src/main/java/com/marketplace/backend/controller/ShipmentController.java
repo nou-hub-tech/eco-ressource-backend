@@ -89,7 +89,7 @@ public class ShipmentController {
         return shipmentService.rechercheAvancee(produitId, quantite, statut, date);
     }
 
-    // ===== TRI ======
+    // ==== TRI =====
 
     //  TRI par date de départ
     @GetMapping("/sort/date")
