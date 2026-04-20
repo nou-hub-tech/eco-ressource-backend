@@ -59,7 +59,7 @@ public class ShipmentController {
         return shipmentService.getShipmentsByStatut(statut);
     }
 
-    // ======= NOUVEAUX ENDPOINTS =======
+    // ===== NOUVEAUX ENDPOINTS =======
 
     //  RECHERCHE par produit
     @GetMapping("/search/produit")
