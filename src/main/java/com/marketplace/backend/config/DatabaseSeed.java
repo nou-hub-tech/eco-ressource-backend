@@ -238,7 +238,7 @@ public class DatabaseSeed {
                 .name("Recycly Tunisia")
                 .mission("Household waste sorting & recycling awareness")
                 .members(120)
-                .donations(4500)
+                .donations(4500d)
                 .statusLabel("active")
                 .aiInsight("High donation success rate")
                 .build());

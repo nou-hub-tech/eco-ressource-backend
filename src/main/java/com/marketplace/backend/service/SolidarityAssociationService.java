@@ -36,6 +36,7 @@ public class SolidarityAssociationService {
             .donations(req.getDonations())
             .statusLabel(req.getStatusLabel())
             .aiInsight(req.getAiInsight())
+            .goalAmount(req.getGoalAmount())
             .build();
     return solidarityAssociationRepository.save(s);
   }
@@ -52,6 +53,7 @@ public class SolidarityAssociationService {
     s.setDonations(req.getDonations());
     s.setStatusLabel(req.getStatusLabel());
     s.setAiInsight(req.getAiInsight());
+    s.setGoalAmount(req.getGoalAmount());
     return solidarityAssociationRepository.save(s);
   }
 

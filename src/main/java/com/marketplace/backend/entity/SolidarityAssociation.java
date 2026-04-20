@@ -39,12 +39,16 @@ public class SolidarityAssociation {
   private Integer members;
 
   @Column(nullable = false)
-  private Integer donations;
+  private Double donations;
 
   @Column(nullable = false)
   private String statusLabel;
 
   private String aiInsight;
+
+  /** Nullable — maps the existing DB column goal_amount. */
+  @Column(name = "goal_amount")
+  private Double goalAmount;
 
   @Column(nullable = false)
   private LocalDateTime createdAt;
