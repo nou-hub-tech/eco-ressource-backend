@@ -47,13 +47,13 @@ public class FinancialAnalyticsService {
 
         report.setCashFlowPredictions(predictCashFlow(transactions));
 
-       
+
         report.setAnomalies(detectAnomalies(transactions));
 
-        // 4️⃣ KPIs calculés
+        // 4⃣ KPIs calculés
         report.setKpis(computeKpis(invoices, transactions));
 
-        // 5️⃣ Recommandations
+        // 5 Recommandations
         report.setRecommendations(generateRecommendations(report));
 
         return report;
