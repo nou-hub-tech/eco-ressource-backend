@@ -1,5 +1,6 @@
 package com.marketplace.backend.service;
 
+import com.marketplace.backend.dto.EventSearchRequest;
 import com.marketplace.backend.dto.PlatformEventRequest;
 import com.marketplace.backend.dto.PlatformEventResponse;
 import com.marketplace.backend.entity.PlatformEvent;
@@ -11,6 +12,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.stream.Collectors;
@@ -131,6 +136,30 @@ private PlatformEventResponse toNearbyResponse(PlatformEvent e, Double lat, Doub
 
     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return earthRadiusKm * c;
+  }
+
+  @Transactional(readOnly = true)
+  public Page<PlatformEventResponse> searchEvents(EventSearchRequest searchRequest) {
+    Sort.Direction direction = "desc".equalsIgnoreCase(searchRequest.getSortDirection()) 
+        ? Sort.Direction.DESC : Sort.Direction.ASC;
+    
+    Pageable pageable = PageRequest.of(
+        searchRequest.getPage(), 
+        searchRequest.getSize(), 
+        Sort.by(direction, searchRequest.getSortBy())
+    );
+    
+    Page<PlatformEvent> eventPage = platformEventRepository.searchEvents(
+        searchRequest.getSearchTerm(),
+        searchRequest.getStatuses(),
+        searchRequest.getDateFrom(),
+        searchRequest.getDateTo(),
+        searchRequest.getMinParticipants(),
+        searchRequest.getMaxParticipants(),
+        pageable
+    );
+    
+    return eventPage.map(this::mapToResponse);
   }
 
   private PlatformEventResponse mapToResponse(PlatformEvent e) {

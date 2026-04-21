@@ -1,5 +1,6 @@
 package com.marketplace.backend.controller;
 
+import com.marketplace.backend.dto.EventSearchRequest;
 import com.marketplace.backend.dto.PlatformEventRequest;
 import com.marketplace.backend.dto.PlatformEventResponse;
 import com.marketplace.backend.entity.PlatformEvent;
@@ -7,6 +8,7 @@ import com.marketplace.backend.service.PlatformEventService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -79,5 +81,11 @@ public class PlatformEventController {
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
     }
+  }
+
+  @PostMapping("/search")
+  public ResponseEntity<Page<PlatformEventResponse>> searchEvents(@Valid @RequestBody EventSearchRequest searchRequest) {
+    Page<PlatformEventResponse> events = platformEventService.searchEvents(searchRequest);
+    return ResponseEntity.ok(events);
   }
 }
