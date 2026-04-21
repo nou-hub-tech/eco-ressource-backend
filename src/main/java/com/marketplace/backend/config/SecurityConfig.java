@@ -72,7 +72,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/users/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/platform-events/**")
-                    .hasRole("ADMIN")
+                    .permitAll()
                     .requestMatchers("/api/solidarity-associations/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/enterprises/**")

@@ -220,30 +220,9 @@ public class DatabaseSeed {
                 .build());
       }
 
-      if (platformEventRepository.count() == 0) {
-        platformEventRepository.save(
-            PlatformEvent.builder()
-                .title("B2B Industrial Fair 2025")
-                .eventDate(LocalDate.of(2025, 4, 10))
-                .location("Tunis")
-                .participants(42)
-                .status(EventStatus.upcoming)
-                .typeLabel("Conference")
-                .build());
-      }
+    
 
-      if (solidarityAssociationRepository.count() == 0) {
-        solidarityAssociationRepository.save(
-            SolidarityAssociation.builder()
-                .name("Recycly Tunisia")
-                .mission("Household waste sorting & recycling awareness")
-                .members(120)
-                .donations(4500)
-                .statusLabel("active")
-                .aiInsight("High donation success rate")
-                .build());
-      }
-
+     
       if (walletTransactionRepository.count() <= 1 && userRepository.count() > 1) {
         User any =
             userRepository.findAll().stream()
