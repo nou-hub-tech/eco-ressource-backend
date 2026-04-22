@@ -94,9 +94,7 @@ public class AuthService {
     }
     userRepository.save(user);
     User reloaded =
-        userRepository
-            .findByEmailWithProfiles(req.getEmail())
-            .orElseThrow();
+        userRepository.findByEmailWithProfiles(req.getEmail()).orElseThrow();
     String token = jwtUtils.generateToken(reloaded.getEmail(), reloaded.getRole());
     return JwtResponse.builder()
         .token(token)

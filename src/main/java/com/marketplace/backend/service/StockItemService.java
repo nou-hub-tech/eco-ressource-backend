@@ -5,6 +5,8 @@ import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.StockItem;
 import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.StockItemRepository;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,8 +54,8 @@ public class StockItemService {
     StockItem s =
         StockItem.builder()
             .companyId(req.getCompanyId())
-            .itemCondition(req.getItemCondition())
-            .expirationDate(req.getExpirationDate())
+            .condition(req.getItemCondition())
+            .expirationDate(toUtilDate(req.getExpirationDate()))
             .image(req.getImage())
             .location(req.getLocation())
             .quantity(req.getQuantity())
@@ -61,6 +63,7 @@ public class StockItemService {
             .unit(req.getUnit())
             .product(product)
             .unitPrice(req.getUnitPrice())
+            .deleted(false)
             .build();
     return stockItemRepository.save(s);
   }
@@ -81,8 +84,8 @@ public class StockItemService {
     }
 
     s.setCompanyId(req.getCompanyId());
-    s.setItemCondition(req.getItemCondition());
-    s.setExpirationDate(req.getExpirationDate());
+    s.setCondition(req.getItemCondition());
+    s.setExpirationDate(toUtilDate(req.getExpirationDate()));
     s.setImage(req.getImage());
     s.setLocation(req.getLocation());
     s.setQuantity(req.getQuantity());
@@ -94,6 +97,13 @@ public class StockItemService {
   }
 
   @Transactional
+  private static java.util.Date toUtilDate(LocalDate ld) {
+    if (ld == null) {
+      return null;
+    }
+    return Date.valueOf(ld);
+  }
+
   public void delete(Long id) {
     StockItem s =
         stockItemRepository

@@ -1,40 +1,46 @@
-package com.marketplace.backend.dto;
+package com.marketplace.backend.service;
 
+import com.marketplace.backend.dto.AdminUserDto;
+import com.marketplace.backend.dto.UserResponseDto;
 import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.Transporter;
 import com.marketplace.backend.entity.User;
 import com.marketplace.backend.entity.enums.Role;
 import com.marketplace.backend.entity.enums.UserAccountStatus;
 import java.time.format.DateTimeFormatter;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.springframework.stereotype.Component;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class AdminUserDto {
+@Component
+public class UserMapper {
 
-  private static final DateTimeFormatter JOINED = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private static final DateTimeFormatter JOINED =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-  private String id;
-  private String name;
-  private String email;
-  private String company;
-  private String role;
-  private String status;
-  private String phone;
-  private String city;
-  private String joined;
-  private int listings;
-  private int orders;
-  private String revenue;
-  private boolean verified;
-  private String avatar;
+  public UserResponseDto toUserResponse(User u) {
+    String routeRole =
+        switch (u.getRole()) {
+          case ROLE_ADMIN -> "admin";
+          case ROLE_ENTERPRISE -> "enterprise";
+          case ROLE_TRANSPORTER -> "transporter";
+        };
+    String company = null;
+    if (u.getEnterprise() != null) {
+      company = u.getEnterprise().getCompanyName();
+    } else if (u.getTransporter() != null) {
+      company = u.getTransporter().getCompanyName();
+    }
+    String avatar = initials(u.getFullName());
+    return UserResponseDto.builder()
+        .id(String.valueOf(u.getId()))
+        .name(u.getFullName())
+        .email(u.getEmail())
+        .role(routeRole)
+        .company(company)
+        .avatar(avatar)
+        .build();
+  }
 
-  public static AdminUserDto from(User u) {
+  public AdminUserDto toAdminUserDto(User u) {
     String role =
         u.getRole() == Role.ROLE_ENTERPRISE
             ? "enterprise"

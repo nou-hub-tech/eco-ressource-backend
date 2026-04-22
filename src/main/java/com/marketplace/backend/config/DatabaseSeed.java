@@ -5,9 +5,9 @@ import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.ExchangeRequest;
 import com.marketplace.backend.entity.Listing;
 import com.marketplace.backend.entity.PlatformEvent;
+import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.Reservation;
 import com.marketplace.backend.entity.SolidarityAssociation;
-import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.StockItem;
 import com.marketplace.backend.entity.Transporter;
 import com.marketplace.backend.entity.TransportOffer;
@@ -27,9 +27,9 @@ import com.marketplace.backend.repository.EnterpriseRepository;
 import com.marketplace.backend.repository.ExchangeRequestRepository;
 import com.marketplace.backend.repository.ListingRepository;
 import com.marketplace.backend.repository.PlatformEventRepository;
+import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.ReservationRepository;
 import com.marketplace.backend.repository.SolidarityAssociationRepository;
-import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.StockItemRepository;
 import com.marketplace.backend.repository.TransporterRepository;
 import com.marketplace.backend.repository.TransportOfferRepository;
@@ -125,28 +125,31 @@ public class DatabaseSeed {
         e.setListingsCount(1);
         enterpriseRepository.save(e);
 
-        Product product = productRepository.save(
-            Product.builder()
-                .name("Aluminum Scrap")
-                .category("Metal")
-                .description("Industrial aluminum scrap for recycling")
-                .materialType("Aluminum")
-                .recyclable(true)
-                .build());
+        Product product =
+            productRepository.save(
+                Product.builder()
+                    .name("Aluminum Scrap")
+                    .category("Metal")
+                    .description("Industrial aluminum scrap for recycling")
+                    .materialType("Aluminum")
+                    .recyclable(true)
+                    .image("aluminum-scrap.jpg")
+                    .enterprise(e)
+                    .build());
 
         stockItemRepository.save(
             StockItem.builder()
                 .companyId(e.getId())
-                .itemCondition("Good")
-                .expirationDate(null)
+                .enterprise(e)
+                .condition("Good")
                 .location("Tunis Warehouse")
                 .quantity(2000)
                 .status("up")
                 .unit("kg")
                 .product(product)
                 .unitPrice(0.6)
+                .deleted(false)
                 .build());
-
         reservationRepository.save(
             Reservation.builder()
                 .typeLabel("Machine")

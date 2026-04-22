@@ -1,13 +1,18 @@
 package com.marketplace.backend.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -18,7 +23,6 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "product")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,27 +35,43 @@ public class Product {
   @Column(name = "id_product")
   private Long idProduct;
 
-  private String category;
+  @NotBlank private String name;
 
+  @NotBlank private String category;
+
+  @NotBlank private String materialType;
+
+  private boolean recyclable;
+
+  @NotBlank
   @Column(length = 1000)
   private String description;
 
-  private String image;
+  @NotBlank private String image;
 
-  @Column(name = "material_type")
-  private String materialType;
+  private String barcode;
 
-  @Column(nullable = false)
-  private String name;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "enterprise_id")
+  @JsonIgnore
+  private Enterprise enterprise;
 
-  @Column(nullable = false)
-  private boolean recyclable;
-
-  @Column(name = "company_id")
-  private Long companyId;
-
-  @OneToMany(mappedBy = "product")
+  @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+  @JsonIgnore
   @Builder.Default
-  @com.fasterxml.jackson.annotation.JsonIgnore
   private List<StockItem> stockItems = new ArrayList<>();
+
+  /** JSON-safe enterprise id (avoids lazy cycle). */
+  public Long getEnterpriseId() {
+    return enterprise != null ? enterprise.getId() : null;
+  }
+
+  /** Alias used by inventory / product REST layer. */
+  public Long getId_product() {
+    return idProduct;
+  }
+
+  public void setId_product(Long id) {
+    this.idProduct = id;
+  }
 }

@@ -42,6 +42,10 @@ public class StockMovement {
   @Column(nullable = false)
   private int quantity;
 
+  @Column(nullable = false)
+  @Builder.Default
+  private String status = "ACTIVE";
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "id_stock")
   private StockItem stockItem;

@@ -32,7 +32,12 @@ build/
 ### VS Code ###
 .vscode/
 .DS_Store
+Thumbs.db
 
 # Local docs / specs (non versionnés)
 FRONTEND-ANGULAR-SPEC-MODULE-ANNONCES.md
 guide code/
+
+uploads/
+application.properties
+*.log

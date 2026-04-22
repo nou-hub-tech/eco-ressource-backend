@@ -50,9 +50,10 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(
-    HttpSecurity http, 
-    AuthenticationProvider authenticationProvider,
-    CorsConfigurationSource corsConfigurationSource) throws Exception {
+      HttpSecurity http,
+      AuthenticationProvider authenticationProvider,
+      CorsConfigurationSource corsConfigurationSource)
+      throws Exception {
     http.cors(c -> c.configurationSource(corsConfigurationSource))
         .csrf(csrf -> csrf.disable())
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -66,6 +67,16 @@ public class SecurityConfig {
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
                         "/v3/api-docs")
+                    .permitAll()
+                    .requestMatchers("/files/**")
+                    .permitAll()
+                    .requestMatchers("/stockitem/**")
+                    .permitAll()
+                    .requestMatchers("/stock-movement/**")
+                    .permitAll()
+                    .requestMatchers("/product/**")
+                    .permitAll()
+                    .requestMatchers("/ai/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/listings/create")
                     .hasAnyRole("ENTERPRISE", "ADMIN")
@@ -98,6 +109,14 @@ public class SecurityConfig {
                     .requestMatchers("/api/comments/**")
                     .authenticated()
                     .requestMatchers("/api/favorites/**")
+                    .authenticated()
+                    .requestMatchers("/api/transport/**")
+                    .authenticated()
+                    .requestMatchers("/api/enterprise/**")
+                    .authenticated()
+                    .requestMatchers("/inventory/**")
+                    .authenticated()
+                    .requestMatchers("/broken-product/**")
                     .authenticated()
                     .anyRequest()
                     .authenticated())

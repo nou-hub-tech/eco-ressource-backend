@@ -53,6 +53,7 @@ public class StockMovementService {
             .movementType(req.getMovementType())
             .quantity(req.getQuantity())
             .stockItem(stockItem)
+            .status("ACTIVE")
             .build();
     return stockMovementRepository.save(m);
   }
