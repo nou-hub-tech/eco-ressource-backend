@@ -98,9 +98,9 @@ public class SecurityConfig {
                     .hasRole("ADMIN")
                     .requestMatchers("/api/listings/**")
                     .authenticated()
-                    // Catalogue / CRUD produits (module annonces + entreprise) — rôles explicites
+                    // Lecture catalogue produits sans authentification (création d’annonces, front public)
                     .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**")
-                    .hasAnyRole("ENTERPRISE", "ADMIN", "TRANSPORTER")
+                    .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/**")
                     .hasAnyRole("ENTERPRISE", "ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/api/products", "/api/products/**")
