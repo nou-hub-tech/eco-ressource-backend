@@ -59,8 +59,10 @@ public class SecurityConfig {
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/api/auth/**")
+                auth ->
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                    .permitAll()
+                    .requestMatchers("/api/auth/**")
                     .permitAll()
                     .requestMatchers(
                         "/swagger-ui/**",
@@ -96,8 +98,15 @@ public class SecurityConfig {
                     .hasRole("ADMIN")
                     .requestMatchers("/api/listings/**")
                     .authenticated()
-                    .requestMatchers("/api/products/**")
-                    .authenticated()
+                    // Catalogue / CRUD produits (module annonces + entreprise) — rôles explicites
+                    .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**")
+                    .hasAnyRole("ENTERPRISE", "ADMIN", "TRANSPORTER")
+                    .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/**")
+                    .hasAnyRole("ENTERPRISE", "ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/products", "/api/products/**")
+                    .hasAnyRole("ENTERPRISE", "ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/products", "/api/products/**")
+                    .hasAnyRole("ENTERPRISE", "ADMIN")
                     .requestMatchers("/api/stock-items/**")
                     .authenticated()
                     .requestMatchers("/api/stock-movements/**")
