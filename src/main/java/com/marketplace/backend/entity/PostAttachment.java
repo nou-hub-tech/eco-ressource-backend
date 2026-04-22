@@ -30,7 +30,8 @@ public class PostAttachment {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "file_url", nullable = false)
+  /** URL distante ou Data URL base64 (front annonces) — LONGTEXT pour éviter la troncature MySQL. */
+  @Column(name = "file_url", nullable = false, columnDefinition = "LONGTEXT")
   private String fileUrl;
 
   @ManyToOne(fetch = FetchType.LAZY)

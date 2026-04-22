@@ -80,6 +80,7 @@ public class ResourceListingService {
     listing = listingRepository.save(listing);
 
     if (req.getAttachmentUrls() != null) {
+      validateAttachmentUrls(req.getAttachmentUrls());
       for (String url : req.getAttachmentUrls()) {
         PostAttachment att =
             PostAttachment.builder().fileUrl(url).listing(listing).build();
@@ -177,6 +178,7 @@ public class ResourceListingService {
     listing.setProduct(product);
 
     if (req.getAttachmentUrls() != null) {
+      validateAttachmentUrls(req.getAttachmentUrls());
       List<PostAttachment> existing = attachmentRepository.findByListingId(id);
       attachmentRepository.deleteAll(existing);
       for (String url : req.getAttachmentUrls()) {
@@ -297,5 +299,19 @@ public class ResourceListingService {
         .favoriteCount(favCount)
         .commentCount(commentCount)
         .build();
+  }
+
+  /** Garde-fou aligné avec le front (~5 Mo fichier → ~7 Mo en Data URL). */
+  private static void validateAttachmentUrls(List<String> urls) {
+    final int maxChars = 8_000_000;
+    for (String url : urls) {
+      if (url == null || url.isBlank()) {
+        throw new IllegalArgumentException("attachmentUrls ne doit pas contenir d'URL vide");
+      }
+      if (url.length() > maxChars) {
+        throw new IllegalArgumentException(
+            "Pièce jointe trop volumineuse (max ~5 Mo côté fichier, envoyer une image plus petite ou utiliser l'URL par défaut)");
+      }
+    }
   }
 }
