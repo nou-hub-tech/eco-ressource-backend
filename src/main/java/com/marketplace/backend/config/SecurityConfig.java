@@ -84,6 +84,8 @@ public class SecurityConfig {
                     .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/transport-offers")
                     .hasAnyAuthority("ROLE_TRANSPORTER", "ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/listing-images")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/users/**")
