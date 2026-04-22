@@ -58,7 +58,7 @@ public class DeliveryOrderController {
         return deliveryOrderService.getDeliveryOrdersByStatut(statut);
     }
 
-    // ==== RECHERCHE ======
+    // === RECHERCHE =====
 
     @GetMapping("/search/nom")
     public List<DeliveryOrder> searchByNomClient(@RequestParam String nomClient) {
