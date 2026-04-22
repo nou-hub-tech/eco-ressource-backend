@@ -10,6 +10,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ public class FavoriteController {
   private final SecurityUserHelper securityUserHelper;
 
   @PostMapping("/api/resource-listings/{listingId}/favorite")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN','ROLE_TRANSPORTER')")
   @Operation(summary = "Ajouter une annonce aux favoris")
   public ResponseEntity<FavoriteResponse> add(
       @PathVariable Long listingId, Authentication auth) {
@@ -35,6 +37,7 @@ public class FavoriteController {
   }
 
   @DeleteMapping("/api/resource-listings/{listingId}/favorite")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN','ROLE_TRANSPORTER')")
   @Operation(summary = "Retirer une annonce des favoris")
   public ResponseEntity<Void> remove(
       @PathVariable Long listingId, Authentication auth) {
@@ -44,6 +47,7 @@ public class FavoriteController {
   }
 
   @GetMapping("/api/favorites/me")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN','ROLE_TRANSPORTER')")
   @Operation(summary = "Lister mes favoris")
   public ResponseEntity<List<FavoriteResponse>> myFavorites(Authentication auth) {
     User user = securityUserHelper.requireUser(auth);

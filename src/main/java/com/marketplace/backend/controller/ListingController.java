@@ -33,13 +33,13 @@ public class ListingController {
   private final ListingService listingService;
 
   @GetMapping
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN','ROLE_TRANSPORTER')")
   public ResponseEntity<List<ListingDto>> all() {
     return ResponseEntity.ok(listingService.findAll());
   }
 
   @GetMapping("/my")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<List<ListingDto>> my(Authentication auth) {
     try {
       return ResponseEntity.ok(listingService.findMine(auth));
@@ -49,7 +49,7 @@ public class ListingController {
   }
 
   @GetMapping("/exchange-requests")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<List<ExchangeRequestDto>> exchangeRequests(Authentication auth) {
     try {
       return ResponseEntity.ok(listingService.myExchangeRequests(auth));
@@ -59,7 +59,7 @@ public class ListingController {
   }
 
   @GetMapping("/reservations/my")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<List<ReservationDto>> reservationsMy(Authentication auth) {
     try {
       return ResponseEntity.ok(listingService.myReservations(auth));
@@ -69,13 +69,13 @@ public class ListingController {
   }
 
   @GetMapping("/wallet/transactions")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<List<WalletTransactionDto>> wallet(Authentication auth) {
     return ResponseEntity.ok(listingService.myWalletTransactions(auth));
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN','ROLE_TRANSPORTER')")
   public ResponseEntity<ListingDto> get(@PathVariable Long id) {
     try {
       return ResponseEntity.ok(listingService.getById(id));
@@ -85,7 +85,7 @@ public class ListingController {
   }
 
   @PostMapping("/create")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<ListingDto> create(
       Authentication auth, @Valid @RequestBody MarketplaceListingRequest req) {
     try {
@@ -96,7 +96,7 @@ public class ListingController {
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<ListingDto> update(
       @PathVariable Long id, Authentication auth, @Valid @RequestBody MarketplaceListingRequest req) {
     try {
@@ -107,7 +107,7 @@ public class ListingController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<Void> delete(@PathVariable Long id, Authentication auth) {
     try {
       listingService.delete(id, auth);
@@ -118,7 +118,7 @@ public class ListingController {
   }
 
   @PatchMapping("/{id}/moderate")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public ResponseEntity<ListingDto> moderate(
       @PathVariable Long id, @Valid @RequestBody ListingModerationRequest req) {
     try {
@@ -129,7 +129,7 @@ public class ListingController {
   }
 
   @PatchMapping("/exchange-requests/{id}")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<ExchangeRequestDto> patchExchange(
       @PathVariable Long id, Authentication auth, @RequestBody Map<String, String> body) {
     try {
