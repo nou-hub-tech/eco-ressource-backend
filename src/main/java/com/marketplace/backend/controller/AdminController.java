@@ -73,12 +73,4 @@ public class AdminController {
             .collect(Collectors.toList());
     return ResponseEntity.ok(result);
   }
-
-  @GetMapping("/api/admin/dashboard/stats")
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<Map<String, Object>> dashboardStats() {
-    long users = userService.listNonAdminUsers().size();
-    return ResponseEntity.ok(
-        Map.of("totalUsers", users, "activeListings", 0, "pendingApprovals", 0));
-  }
 }
