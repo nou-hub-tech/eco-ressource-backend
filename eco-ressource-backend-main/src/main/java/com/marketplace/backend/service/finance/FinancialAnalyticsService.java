@@ -148,7 +148,7 @@ public class FinancialAnalyticsService {
         List<Double> historicalValues = new ArrayList<>(monthlyFlow.values());
         int n = historicalValues.size();
 
-        // Moyenne mobile pondérée (poids croissants vers le plus récent)
+        
         List<CashFlowPrediction> predictions = new ArrayList<>();
         LocalDate now = LocalDate.now();
 
@@ -171,7 +171,7 @@ public class FinancialAnalyticsService {
                     weights += weight;
                 }
                 predicted = weightedSum / weights;
-                // Tendance légère (drift)
+
                 if (n >= 2) {
                     double trend = (historicalValues.get(n - 1) - historicalValues.get(0)) / n;
                     predicted += trend * i * 0.5;

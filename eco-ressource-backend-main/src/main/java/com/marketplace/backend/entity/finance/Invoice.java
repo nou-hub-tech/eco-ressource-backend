@@ -19,7 +19,7 @@ public class Invoice {
     @Column(name = "invoice_number", unique = true, nullable = false)
     private String invoiceNumber;
 
-   
+
     @Column(name = "seller_name")
     private String sellerName;
 
