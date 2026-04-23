@@ -1,9 +1,8 @@
 package com.marketplace.backend.service.finance;
 
-import com.marketplace.backend.entity.finance.EscrowStatus;
 import com.marketplace.backend.entity.finance.Invoice;
 import com.marketplace.backend.entity.finance.escrow;
-import com.marketplace.backend.repository.finance.EscrowRepository;
+import com.marketplace.backend.entity.finance.EscrowStatus;
 import com.marketplace.backend.repository.finance.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +17,7 @@ import java.util.List;
 public class InvoiceServiceImpl implements IInvoiceService {
 
     private final InvoiceRepository invoiceRepository;
-    private final EscrowRepository escrowRepository;
+    private final IEscrowService escrowService;
 
     // ══════════════════════════════════════════════════
     //  CRÉER FACTURE → ESCROW AUTOMATIQUE
@@ -44,7 +43,7 @@ public class InvoiceServiceImpl implements IInvoiceService {
         autoEscrow.setCreatedAt(LocalDate.now().toString());
         autoEscrow.setLinkedInvoiceId(savedInvoice.getId());
 
-        escrow savedEscrow = escrowRepository.save(autoEscrow);
+        escrow savedEscrow = escrowService.addEscrow(autoEscrow);
 
         // 4️⃣ Lier l'escrow à la facture
         savedInvoice.setLinkedEscrowId(savedEscrow.getIdescrow()); // ✅ FIX: getIdescrow()
@@ -52,7 +51,7 @@ public class InvoiceServiceImpl implements IInvoiceService {
     }
 
     // ══════════════════════════════════════════════════
-    //  CONFIRMER LIVRAISON → PAID + ESCROW RELEASED
+    //  CONFIRMER LIVRAISON → PAID + ESCROW RELEASED + 📧 EMAIL
     // ══════════════════════════════════════════════════
     @Override
     @Transactional
@@ -60,16 +59,22 @@ public class InvoiceServiceImpl implements IInvoiceService {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Facture introuvable : " + id));
 
+        // 1️⃣ Marquer la facture comme PAID
         invoice.setStatus("PAID");
         invoice.setDeliveredAt(LocalDate.now().toString());
         invoiceRepository.save(invoice);
 
+        // 2️⃣ Libérer l'escrow via IEscrowService
+        //    → déclenche EscrowReleasedEvent → EscrowEmailListener → 📧 email
         if (invoice.getLinkedEscrowId() != null) {
-            escrowRepository.findById(invoice.getLinkedEscrowId()).ifPresent(esc -> {
-                esc.setStatus(EscrowStatus.RELEASED);
-                esc.setReleaseDate(LocalDate.now().toString());
-                escrowRepository.save(esc);
-            });
+            try {
+                escrowService.releaseEscrow(invoice.getLinkedEscrowId());
+            } catch (Exception ex) {
+                // L'escrow peut être déjà libéré ou introuvable — on log sans bloquer
+                org.slf4j.LoggerFactory.getLogger(InvoiceServiceImpl.class)
+                        .warn("[INVOICE] ⚠️ Impossible de libérer l'escrow #{} : {}",
+                                invoice.getLinkedEscrowId(), ex.getMessage());
+            }
         }
 
         return invoice;

@@ -12,25 +12,45 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Invoice {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "invoice_number", unique = true, nullable = false)
     private String invoiceNumber;
+
+   
+    @Column(name = "seller_name")
+    private String sellerName;
+
+    @Column(name = "seller_article_fiscal", length = 50)
+    private String sellerArticleFiscal;
+
+
     @Column(name = "client_name", nullable = false)
     private String clientName;
+
+    @Column(name = "buyer_article_fiscal", length = 50)
+    private String buyerArticleFiscal;
+
+
     @Column(name = "project", nullable = false)
     private String project;
+
     @Column(name = "amount_ht", nullable = false)
     private Double amountHT;
+
     @Column(name = "tva", nullable = false)
     private Double tva = 9.0;
+
     @Column(name = "amount_ttc", nullable = false)
     private Double amountTTC;
+
     @Column(name = "status", nullable = false)
     private String status = "UNPAID";
+
     private String issueDate;
+
 
     private Long deliveryOrderId;
     private Long linkedEscrowId;
