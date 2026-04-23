@@ -33,6 +33,12 @@ public class EscrowServiceImpl implements IEscrowService {
     }
 
     @Override
+    public escrow retrieveEscrow(Long id) {
+        return escrowRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Escrow introuvable : " + id));
+    }
+
+    @Override
     public escrow addEscrow(escrow e) {
         if (e.getStatus() == EscrowStatus.RELEASED) {
             e.setReleaseDate(LocalDate.now().toString());

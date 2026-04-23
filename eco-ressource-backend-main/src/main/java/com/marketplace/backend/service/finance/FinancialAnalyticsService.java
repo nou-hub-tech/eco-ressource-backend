@@ -148,7 +148,7 @@ public class FinancialAnalyticsService {
         List<Double> historicalValues = new ArrayList<>(monthlyFlow.values());
         int n = historicalValues.size();
 
-        
+
         List<CashFlowPrediction> predictions = new ArrayList<>();
         LocalDate now = LocalDate.now();
 

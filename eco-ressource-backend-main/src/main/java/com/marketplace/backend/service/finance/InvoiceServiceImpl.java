@@ -17,7 +17,7 @@ import java.util.List;
 public class InvoiceServiceImpl implements IInvoiceService {
 
     private final InvoiceRepository invoiceRepository;
-    private final IEscrowService escrowService;
+    private final IEscrowService escrowService; // ✅ Utilise le service (pas le repo) → email automatique
 
     // ══════════════════════════════════════════════════
     //  CRÉER FACTURE → ESCROW AUTOMATIQUE
@@ -46,7 +46,7 @@ public class InvoiceServiceImpl implements IInvoiceService {
         escrow savedEscrow = escrowService.addEscrow(autoEscrow);
 
         // 4️⃣ Lier l'escrow à la facture
-        savedInvoice.setLinkedEscrowId(savedEscrow.getIdescrow()); // ✅ FIX: getIdescrow()
+        savedInvoice.setLinkedEscrowId(savedEscrow.getIdescrow());
         return invoiceRepository.save(savedInvoice);
     }
 
@@ -70,9 +70,8 @@ public class InvoiceServiceImpl implements IInvoiceService {
             try {
                 escrowService.releaseEscrow(invoice.getLinkedEscrowId());
             } catch (Exception ex) {
-                // L'escrow peut être déjà libéré ou introuvable — on log sans bloquer
                 org.slf4j.LoggerFactory.getLogger(InvoiceServiceImpl.class)
-                        .warn("[INVOICE] ⚠️ Impossible de libérer l'escrow #{} : {}",
+                        .warn("[INVOICE] Impossible de liberer l'escrow #{} : {}",
                                 invoice.getLinkedEscrowId(), ex.getMessage());
             }
         }
@@ -93,33 +92,45 @@ public class InvoiceServiceImpl implements IInvoiceService {
 
         Invoice saved = invoiceRepository.save(invoice);
 
+        // Mettre à jour le montant de l'escrow lié si encore LOCKED
         if (saved.getLinkedEscrowId() != null) {
-            escrowRepository.findById(saved.getLinkedEscrowId()).ifPresent(esc -> {
-                if (esc.getStatus() == EscrowStatus.LOCKED) {
-                    esc.setAmount(saved.getAmountTTC());
-                    escrowRepository.save(esc);
+            try {
+                escrow linkedEscrow = escrowService.retrieveEscrow(saved.getLinkedEscrowId());
+                if (linkedEscrow != null && linkedEscrow.getStatus() == EscrowStatus.LOCKED) {
+                    linkedEscrow.setAmount(saved.getAmountTTC());
+                    escrowService.modifyEscrow(linkedEscrow);
                 }
-            });
+            } catch (Exception ex) {
+                org.slf4j.LoggerFactory.getLogger(InvoiceServiceImpl.class)
+                        .warn("[INVOICE] Impossible de mettre a jour l'escrow #{} : {}",
+                                saved.getLinkedEscrowId(), ex.getMessage());
+            }
         }
 
         return saved;
     }
 
     // ══════════════════════════════════════════════════
-    //  SUPPRIMER FACTURE + ESCROW LIÉ   ✅ FIX: deleteInvoice (pas removeInvoice)
+    //  SUPPRIMER FACTURE + ESCROW LIÉ
     // ══════════════════════════════════════════════════
     @Override
     @Transactional
-    public void deleteInvoice(Long id) {  // ✅ FIX: nom correct selon l'interface
+    public void deleteInvoice(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Facture introuvable : " + id));
 
+        // Supprimer l'escrow lié si encore LOCKED
         if (invoice.getLinkedEscrowId() != null) {
-            escrowRepository.findById(invoice.getLinkedEscrowId()).ifPresent(esc -> {
-                if (esc.getStatus() == EscrowStatus.LOCKED) {
-                    escrowRepository.deleteById(esc.getIdescrow()); // ✅ FIX: getIdescrow()
+            try {
+                escrow linkedEscrow = escrowService.retrieveEscrow(invoice.getLinkedEscrowId());
+                if (linkedEscrow != null && linkedEscrow.getStatus() == EscrowStatus.LOCKED) {
+                    escrowService.removeEscrow(linkedEscrow.getIdescrow());
                 }
-            });
+            } catch (Exception ex) {
+                org.slf4j.LoggerFactory.getLogger(InvoiceServiceImpl.class)
+                        .warn("[INVOICE] Impossible de supprimer l'escrow #{} : {}",
+                                invoice.getLinkedEscrowId(), ex.getMessage());
+            }
         }
 
         invoiceRepository.deleteById(id);
