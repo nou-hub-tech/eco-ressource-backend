@@ -1,6 +1,7 @@
 package com.marketplace.backend.controller.finance;
 
 import com.marketplace.backend.entity.finance.Invoice;
+import com.marketplace.backend.service.finance.ClientSolvabilityService;
 import com.marketplace.backend.service.finance.IInvoiceService;
 import com.marketplace.backend.service.finance.InvoiceRiskService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class InvoiceController {
 
     private final IInvoiceService invoiceService;
     private final InvoiceRiskService invoiceRiskService;
+    private final ClientSolvabilityService solvabilityService;
 
     @PostMapping("/add")
     public Invoice addInvoice(@RequestBody Invoice invoice) {
@@ -49,11 +51,20 @@ public class InvoiceController {
     }
 
     /**
-     * 🤖 Analyse IA des risques — Factures impayées & Clients à risque
+     * 🤖 Analyse IA risque simple (backward compat)
      * GET /api/invoices/ai-risk
      */
     @GetMapping("/ai-risk")
     public InvoiceRiskService.RiskReport getRiskReport() {
         return invoiceRiskService.generateRiskReport();
     }
-}
+
+    /**
+     * 🏦 Analyse IA avancée — Solvabilité & Prédiction de paiement
+     * GET /api/invoices/ai-solvability
+     */
+    @GetMapping("/ai-solvability")
+    public ClientSolvabilityService.SolvabilityReport getSolvabilityReport() {
+        return solvabilityService.generateSolvabilityReport();
+    }
+}
