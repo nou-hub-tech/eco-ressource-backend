@@ -58,11 +58,11 @@ public class CommentController {
   }
 
   @DeleteMapping("/api/comments/{commentId}")
-  @Operation(summary = "Supprimer un commentaire (proprietaire ou admin)")
+  @Operation(summary = "Supprimer un commentaire (auteur, proprietaire de l’annonce, ou admin)")
   public ResponseEntity<Void> delete(@PathVariable Long commentId, Authentication auth) {
     User user = securityUserHelper.requireUser(auth);
     boolean isAdmin = user.getRole().name().equals("ROLE_ADMIN");
-    commentService.delete(commentId, user.getId(), isAdmin);
+    commentService.delete(commentId, user, isAdmin);
     return ResponseEntity.noContent().build();
   }
 }

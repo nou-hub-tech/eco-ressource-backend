@@ -29,6 +29,15 @@ public class AuthService {
   private final JwtUtils jwtUtils;
 
   @Transactional(readOnly = true)
+  public UserResponseDto profileForEmail(String email) {
+    User user =
+        userRepository
+            .findByEmailWithProfiles(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    return UserResponseDto.from(user);
+  }
+
+  @Transactional(readOnly = true)
   public JwtResponse login(LoginRequest req) {
     Authentication auth =
         authenticationManager.authenticate(

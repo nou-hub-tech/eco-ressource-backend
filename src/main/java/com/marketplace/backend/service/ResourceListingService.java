@@ -4,6 +4,7 @@ import com.marketplace.backend.dto.CreateListingRequest;
 import com.marketplace.backend.dto.GroupPurchaseResponse;
 import com.marketplace.backend.dto.ListingResponse;
 import com.marketplace.backend.entity.GroupPurchase;
+import com.marketplace.backend.entity.GroupParticipant;
 import com.marketplace.backend.entity.PostAttachment;
 import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.ResourceListing;
@@ -11,12 +12,14 @@ import com.marketplace.backend.entity.enums.GroupPurchaseStatus;
 import com.marketplace.backend.entity.enums.ResourceListingStatus;
 import com.marketplace.backend.entity.enums.ListingType;
 import com.marketplace.backend.repository.CommentRepository;
+import com.marketplace.backend.repository.EnterpriseRepository;
 import com.marketplace.backend.repository.FavoriteRepository;
+import com.marketplace.backend.repository.GroupParticipantRepository;
 import com.marketplace.backend.repository.GroupPurchaseRepository;
 import com.marketplace.backend.repository.PostAttachmentRepository;
 import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.ResourceListingRepository;
-import java.util.ArrayList;
+import com.marketplace.backend.repository.TransporterRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +34,11 @@ public class ResourceListingService {
   private final ProductRepository productRepository;
   private final PostAttachmentRepository attachmentRepository;
   private final GroupPurchaseRepository groupPurchaseRepository;
+  private final GroupParticipantRepository participantRepository;
   private final FavoriteRepository favoriteRepository;
   private final CommentRepository commentRepository;
+  private final EnterpriseRepository enterpriseRepository;
+  private final TransporterRepository transporterRepository;
 
   @Transactional
   public ListingResponse create(CreateListingRequest req) {
@@ -268,14 +274,13 @@ public class ResourceListingService {
                 .remainingQuantity(gp.getTargetQuantity() - gp.getCurrentQuantity())
                 .deadline(gp.getDeadline())
                 .status(gp.getStatus().name())
-                .participants(new ArrayList<>())
+                .participants(toParticipantResponses(gp.getId()))
                 .build();
       }
     }
 
     long favCount = favoriteRepository.countByListingId(listing.getId());
-    long commentCount =
-        commentRepository.findByListingIdOrderByCreatedAtAsc(listing.getId()).size();
+    long commentCount = commentRepository.countByListing_Id(listing.getId());
 
     return ListingResponse.builder()
         .id(listing.getId())
@@ -293,12 +298,43 @@ public class ResourceListingService {
         .productName(listing.getProduct().getName())
         .productCategory(listing.getProduct().getCategory())
         .companyId(listing.getCompanyId())
+        .companyName(resolveCompanyName(listing.getCompanyId()))
         .createdAt(listing.getCreatedAt())
         .attachmentUrls(attachmentUrls)
         .groupPurchase(gpResponse)
         .favoriteCount(favCount)
         .commentCount(commentCount)
         .build();
+  }
+
+  private List<GroupPurchaseResponse.ParticipantInfo> toParticipantResponses(Long groupId) {
+    return participantRepository.findByGroupId(groupId).stream()
+        .map(this::toParticipantResponse)
+        .collect(Collectors.toList());
+  }
+
+  private GroupPurchaseResponse.ParticipantInfo toParticipantResponse(GroupParticipant participant) {
+    return GroupPurchaseResponse.ParticipantInfo.builder()
+        .id(participant.getId())
+        .companyId(participant.getCompanyId())
+        .companyName(resolveCompanyName(participant.getCompanyId()))
+        .quantity(participant.getQuantity())
+        .build();
+  }
+
+  private String resolveCompanyName(Long companyId) {
+    if (companyId == null) {
+      return null;
+    }
+    return enterpriseRepository
+        .findById(companyId)
+        .map(e -> e.getCompanyName())
+        .orElseGet(
+            () ->
+                transporterRepository
+                    .findById(companyId)
+                    .map(t -> t.getCompanyName())
+                    .orElse(null));
   }
 
   /** Garde-fou aligné avec le front (~5 Mo fichier → ~7 Mo en Data URL). */

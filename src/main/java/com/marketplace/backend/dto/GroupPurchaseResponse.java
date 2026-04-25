@@ -23,6 +23,8 @@ public class GroupPurchaseResponse {
   public static class ParticipantInfo {
     private Long id;
     private Long companyId;
+    /** Nom entreprise ou transporteur (résolu depuis companyId). */
+    private String companyName;
     private Integer quantity;
   }
 }

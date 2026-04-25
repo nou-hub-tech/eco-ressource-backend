@@ -25,6 +25,7 @@ public class ListingResponse {
   private String productName;
   private String productCategory;
   private Long companyId;
+  private String companyName;
   private LocalDateTime createdAt;
   private List<String> attachmentUrls;
   private GroupPurchaseResponse groupPurchase;

@@ -6,8 +6,10 @@ import com.marketplace.backend.entity.GroupParticipant;
 import com.marketplace.backend.entity.GroupPurchase;
 import com.marketplace.backend.entity.enums.GroupPurchaseStatus;
 import com.marketplace.backend.entity.enums.ResourceListingStatus;
+import com.marketplace.backend.repository.EnterpriseRepository;
 import com.marketplace.backend.repository.GroupParticipantRepository;
 import com.marketplace.backend.repository.GroupPurchaseRepository;
+import com.marketplace.backend.repository.TransporterRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +23,8 @@ public class GroupPurchaseService {
 
   private final GroupPurchaseRepository groupPurchaseRepository;
   private final GroupParticipantRepository participantRepository;
+  private final EnterpriseRepository enterpriseRepository;
+  private final TransporterRepository transporterRepository;
 
   @Transactional(readOnly = true)
   public GroupPurchaseResponse getById(Long groupId) {
@@ -129,6 +133,7 @@ public class GroupPurchaseService {
                 GroupPurchaseResponse.ParticipantInfo.builder()
                     .id(p.getId())
                     .companyId(p.getCompanyId())
+                    .companyName(resolveCompanyName(p.getCompanyId()))
                     .quantity(p.getQuantity())
                     .build())
         .collect(Collectors.toList());
@@ -142,6 +147,7 @@ public class GroupPurchaseService {
                     GroupPurchaseResponse.ParticipantInfo.builder()
                         .id(p.getId())
                         .companyId(p.getCompanyId())
+                        .companyName(resolveCompanyName(p.getCompanyId()))
                         .quantity(p.getQuantity())
                         .build())
             .collect(Collectors.toList());
@@ -156,5 +162,20 @@ public class GroupPurchaseService {
         .status(group.getStatus().name())
         .participants(participants)
         .build();
+  }
+
+  private String resolveCompanyName(Long companyId) {
+    if (companyId == null) {
+      return null;
+    }
+    return enterpriseRepository
+        .findById(companyId)
+        .map(e -> e.getCompanyName())
+        .orElseGet(
+            () ->
+                transporterRepository
+                    .findById(companyId)
+                    .map(t -> t.getCompanyName())
+                    .orElse(null));
   }
 }

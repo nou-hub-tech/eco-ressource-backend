@@ -81,7 +81,7 @@ public class CommentService {
         .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
 
     List<Comment> rootComments =
-        commentRepository.findByListingIdAndParentIsNullOrderByCreatedAtAsc(listingId);
+        commentRepository.findByListing_IdAndParentIsNullOrderByCreatedAtAsc(listingId);
 
     return rootComments.stream().map(this::toResponseWithReplies).collect(Collectors.toList());
   }
@@ -110,19 +110,40 @@ public class CommentService {
   }
 
   @Transactional
-  public void delete(Long commentId, Long userId, boolean isAdmin) {
+  public void delete(Long commentId, User actor, boolean isAdmin) {
     Comment comment =
         commentRepository
             .findById(commentId)
             .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
 
-    boolean isOwner = comment.getUser().getId().equals(userId);
+    boolean isCommentOwner = comment.getUser().getId().equals(actor.getId());
+    boolean isListingOwner = ownsListing(actor, comment.getListing());
 
-    if (!isOwner && !isAdmin) {
-      throw new IllegalArgumentException("Only the comment owner or admin can delete");
+    if (!isCommentOwner && !isAdmin && !isListingOwner) {
+      throw new IllegalArgumentException(
+          "Only the comment owner, listing owner, or admin can delete");
     }
 
-    commentRepository.delete(comment);
+    deleteCommentAndDescendants(comment.getId());
+  }
+
+  /** Le propriétaire de l’annonce (entreprise ou transporteur) correspond au companyId du listing. */
+  private boolean ownsListing(User user, ResourceListing listing) {
+    if (listing == null || listing.getCompanyId() == null) {
+      return false;
+    }
+    Long cid = listing.getCompanyId();
+    if (user.getEnterprise() != null && cid.equals(user.getEnterprise().getId())) {
+      return true;
+    }
+    return user.getTransporter() != null && cid.equals(user.getTransporter().getId());
+  }
+
+  private void deleteCommentAndDescendants(Long commentId) {
+    for (Comment child : commentRepository.findByParent_Id(commentId)) {
+      deleteCommentAndDescendants(child.getId());
+    }
+    commentRepository.deleteById(commentId);
   }
 
   private CommentResponse toResponse(Comment comment) {
