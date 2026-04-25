@@ -3,6 +3,7 @@ package com.marketplace.backend.controller.finance;
 import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.User;
 import com.marketplace.backend.entity.finance.Invoice;
+import com.marketplace.backend.entity.finance.InvoiceType;
 import com.marketplace.backend.repository.EnterpriseRepository;
 import com.marketplace.backend.repository.UserRepository;
 import com.marketplace.backend.repository.finance.InvoiceRepository;
@@ -19,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -43,7 +45,52 @@ public class InvoiceController {
 
     @PostMapping("/add")
     public Invoice addInvoice(@RequestBody Invoice invoice) {
+        String companyName = getCurrentCompanyName();
+        
+        // Auto-detection du type si non fourni
+        if (invoice.getInvoiceType() == null && companyName != null) {
+            if (companyName.equalsIgnoreCase(invoice.getSellerName())) {
+                invoice.setInvoiceType(InvoiceType.VENTE);
+            } else if (companyName.equalsIgnoreCase(invoice.getClientName())) {
+                invoice.setInvoiceType(InvoiceType.ACHAT);
+            }
+        }
+
+        // Forcer l'association à l'entreprise connectée pour garantir la visibilité
+        if (companyName != null) {
+            if (invoice.getInvoiceType() == InvoiceType.VENTE) {
+                invoice.setSellerName(companyName);
+            } else if (invoice.getInvoiceType() == InvoiceType.ACHAT) {
+                invoice.setClientName(companyName);
+            }
+        }
+
+        // Auto-génération du numéro si vide
+        if (invoice.getInvoiceNumber() == null || invoice.getInvoiceNumber().isBlank()) {
+            invoice.setInvoiceNumber(generateNextNumber(invoice.getInvoiceType()));
+        }
+
         return invoiceService.addInvoice(invoice);
+    }
+
+    /**
+     * 🔢 Prochain numéro de facture disponible : VTE-2026-001 ou ACH-2026-001
+     * GET /api/invoices/next-number/{type}
+     */
+    @GetMapping("/next-number/{type}")
+    public ResponseEntity<Map<String, String>> getNextNumber(@PathVariable String type) {
+        InvoiceType invoiceType;
+        try { invoiceType = InvoiceType.valueOf(type.toUpperCase()); }
+        catch (Exception e) { return ResponseEntity.badRequest().build(); }
+        return ResponseEntity.ok(Map.of("number", generateNextNumber(invoiceType)));
+    }
+
+    private String generateNextNumber(InvoiceType type) {
+        if (type == null) return "";
+        String year  = String.valueOf(java.time.LocalDate.now().getYear());
+        String prefix = type == InvoiceType.VENTE ? "VTE" : "ACH";
+        long count = invoiceRepository.countByTypeAndYear(type, year);
+        return String.format("%s-%s-%03d", prefix, year, count + 1);
     }
 
     /** Toutes les factures (admin uniquement) */
@@ -73,20 +120,35 @@ public class InvoiceController {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  🏢 FILTRÉ PAR ENTREPRISE CONNECTÉE
-    //  GET /api/invoices/my  →  acheteur OU vendeur
+    //  🏢 FILTRES PAR ENTREPRISE CONNECTEE
     // ═══════════════════════════════════════════════════════════
 
+    /** Toutes les factures de l'entreprise (acheteur OU vendeur) */
     @GetMapping("/my")
     public ResponseEntity<List<Invoice>> getMyInvoices() {
         String companyName = getCurrentCompanyName();
-        if (companyName == null) {
-            log.warn("[INVOICES] Entreprise introuvable pour l'utilisateur connecté");
-            return ResponseEntity.ok(List.of());
-        }
-        List<Invoice> invoices = invoiceRepository.findByEnterpriseCompanyName(companyName);
-        log.info("[INVOICES] {} factures trouvées pour l'entreprise '{}'", invoices.size(), companyName);
-        return ResponseEntity.ok(invoices);
+        if (companyName == null) return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok(invoiceRepository.findByEnterpriseCompanyName(companyName));
+    }
+
+    /** 📤 Factures de VENTE : l'entreprise est vendeur → va encaisser */
+    @GetMapping("/my/sales")
+    public ResponseEntity<List<Invoice>> getMySalesInvoices() {
+        String companyName = getCurrentCompanyName();
+        if (companyName == null) return ResponseEntity.ok(List.of());
+        List<Invoice> sales = invoiceRepository.findSalesInvoices(companyName);
+        log.info("[INVOICES] {} factures de vente pour '{}'", sales.size(), companyName);
+        return ResponseEntity.ok(sales);
+    }
+
+    /** 📥 Factures d'ACHAT : l'entreprise est acheteur → doit payer */
+    @GetMapping("/my/purchases")
+    public ResponseEntity<List<Invoice>> getMyPurchaseInvoices() {
+        String companyName = getCurrentCompanyName();
+        if (companyName == null) return ResponseEntity.ok(List.of());
+        List<Invoice> purchases = invoiceRepository.findPurchaseInvoices(companyName);
+        log.info("[INVOICES] {} factures d'achat pour '{}'", purchases.size(), companyName);
+        return ResponseEntity.ok(purchases);
     }
 
     // ═══════════════════════════════════════════════════════════

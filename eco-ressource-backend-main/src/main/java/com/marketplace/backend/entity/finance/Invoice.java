@@ -49,6 +49,15 @@ public class Invoice {
     @Column(name = "status", nullable = false)
     private String status = "UNPAID";
 
+    /**
+     * 🧧 Type de facture du point de vue de l'entreprise :
+     *  - VENTE : entreprise = vendeur (elle va encaisser)
+     *  - ACHAT : entreprise = acheteur (elle doit payer)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "invoice_type")
+    private InvoiceType invoiceType;
+
     private String issueDate;
 
 
