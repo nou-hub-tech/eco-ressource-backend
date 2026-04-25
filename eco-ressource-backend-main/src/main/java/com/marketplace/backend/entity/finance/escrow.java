@@ -1,4 +1,5 @@
 package com.marketplace.backend.entity.finance;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,4 +24,7 @@ public class escrow {
     private Long deliveryOrderId;
     private Long linkedInvoiceId;
     private Long idStock;
+
+    @Column(name = "enterprise_id")
+    private Long enterpriseId;
 }

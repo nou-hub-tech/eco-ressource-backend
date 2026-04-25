@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 public class InvoiceChatService {
 
     private final InvoiceRepository invoiceRepository;
+    private final EnterpriseContextHelper enterpriseContext;
     private final RestTemplate restTemplate;
 
     @Value("${groq.api.key}")
@@ -53,16 +54,14 @@ public class InvoiceChatService {
             return new ChatResponse("Veuillez poser une question.", false);
         }
 
-        // 1. Construire le contexte financier depuis la DB
+        // Recuperer les factures de l'entreprise connectee seulement
         String financialContext = buildFinancialContext();
 
-        // 2. Appeler Groq
         try {
             String answer = callGroq(userQuestion, financialContext);
             return new ChatResponse(answer, true);
         } catch (Exception e) {
             log.error("[CHAT] Erreur appel Groq : {}", e.getMessage());
-            // Fallback : réponse locale si Groq indisponible
             return new ChatResponse(localFallback(userQuestion), false);
         }
     }
@@ -71,9 +70,18 @@ public class InvoiceChatService {
     //  CONSTRUCTION DU CONTEXTE FINANCIER
     // ═══════════════════════════════════════════════════════════
     private String buildFinancialContext() {
-        List<Invoice> all = invoiceRepository.findAll();
+        // 🏢 Filtrer par entreprise connectee
+        String companyName = enterpriseContext.getCurrentCompanyName();
+        List<Invoice> all;
+        if (companyName != null) {
+            all = invoiceRepository.findByEnterpriseCompanyName(companyName);
+            log.info("[CHAT] Contexte IA pour l'entreprise '{}' — {} factures", companyName, all.size());
+        } else {
+            all = invoiceRepository.findAll();
+            log.warn("[CHAT] Entreprise introuvable, utilisation de toutes les factures ({})", all.size());
+        }
 
-        if (all.isEmpty()) return "Aucune facture dans le système.";
+        if (all.isEmpty()) return "Aucune facture trouvee pour cette entreprise.";
 
         long total   = all.size();
         long paid    = all.stream().filter(i -> "PAID".equals(i.getStatus())).count();
@@ -83,12 +91,10 @@ public class InvoiceChatService {
         double unpaidAmount = totalAmount - paidAmount;
         double recoveryRate = totalAmount > 0 ? paidAmount / totalAmount * 100 : 0;
 
-        // Factures en retard
         long overdue = all.stream()
                 .filter(i -> "UNPAID".equals(i.getStatus()) && daysOverdue(i) > 30)
                 .count();
 
-        // Résumé par client
         Map<String, List<Invoice>> byClient = all.stream()
                 .filter(i -> i.getClientName() != null)
                 .collect(Collectors.groupingBy(Invoice::getClientName));
@@ -99,11 +105,10 @@ public class InvoiceChatService {
             double clientUnpaidAmt = invoices.stream().filter(i -> "UNPAID".equals(i.getStatus())).mapToDouble(i -> safe(i.getAmountTTC())).sum();
             long maxDays = invoices.stream().filter(i -> "UNPAID".equals(i.getStatus())).mapToLong(this::daysOverdue).max().orElse(0);
             clientSummary.append(String.format(
-                    "- %s : %d factures (%d impayees, %.0f TND impayес, max %d jours de retard)\n",
+                    "- %s : %d factures (%d impayees, %.0f TND impayes, max %d jours de retard)\n",
                     client, invoices.size(), clientUnpaid, clientUnpaidAmt, maxDays));
         });
 
-        // Liste des 5 factures impayées les plus anciennes
         String oldestUnpaid = all.stream()
                 .filter(i -> "UNPAID".equals(i.getStatus()))
                 .sorted(Comparator.comparingLong(this::daysOverdue).reversed())
@@ -112,31 +117,36 @@ public class InvoiceChatService {
                         i.getInvoiceNumber(), i.getClientName(), safe(i.getAmountTTC()), daysOverdue(i)))
                 .collect(Collectors.joining("\n"));
 
+        String header = companyName != null
+                ? "=== DONNEES FINANCIERES DE L'ENTREPRISE : " + companyName + " ==="
+                : "=== DONNEES FINANCIERES GLOBALES ===";
+
         return String.format("""
-                === DONNÉES FINANCIÈRES RÉELLES (EcoRessource B2B) ===
+                %s
                 Date d'analyse : %s
-                
-                RÉSUMÉ GLOBAL :
+
+                RESUME GLOBAL :
                 - Total factures : %d
-                - Factures payées : %d (%.1f%%)
-                - Factures impayées : %d
-                - Montant total facturé : %.0f TND
-                - Montant encaissé : %.0f TND  
-                - Montant impayé : %.0f TND
+                - Factures payees : %d (%.1f%%)
+                - Factures impayees : %d
+                - Montant total facture : %.0f TND
+                - Montant encaisse : %.0f TND
+                - Montant impaye : %.0f TND
                 - Taux de recouvrement : %.1f%%
                 - Factures en retard >30j : %d
-                
-                RÉSUMÉ PAR CLIENT :
+
+                RESUME PAR CLIENT :
                 %s
-                
-                FACTURES IMPAYÉES LES PLUS ANCIENNES :
+
+                FACTURES IMPAYEES LES PLUS ANCIENNES :
                 %s
                 """,
+                header,
                 LocalDate.now(),
                 total, paid, (double) paid / total * 100, unpaid,
                 totalAmount, paidAmount, unpaidAmount, recoveryRate, overdue,
                 clientSummary,
-                oldestUnpaid.isEmpty() ? "Aucune facture impayée" : oldestUnpaid
+                oldestUnpaid.isEmpty() ? "Aucune facture impayee" : oldestUnpaid
         );
     }
 
@@ -189,24 +199,27 @@ public class InvoiceChatService {
     //  FALLBACK LOCAL (si Groq indisponible)
     // ═══════════════════════════════════════════════════════════
     private String localFallback(String question) {
-        List<Invoice> all = invoiceRepository.findAll();
+        String companyName = enterpriseContext.getCurrentCompanyName();
+        List<Invoice> all = companyName != null
+                ? invoiceRepository.findByEnterpriseCompanyName(companyName)
+                : invoiceRepository.findAll();
         String q = question.toLowerCase();
 
         if (q.contains("impay") || q.contains("unpaid")) {
             long count = all.stream().filter(i -> "UNPAID".equals(i.getStatus())).count();
             double amount = all.stream().filter(i -> "UNPAID".equals(i.getStatus())).mapToDouble(i -> safe(i.getAmountTTC())).sum();
-            return String.format("Vous avez **%d factures impayées** pour un total de **%.0f TND**.", count, amount);
+            return String.format("Vous avez **%d factures impayees** pour un total de **%.0f TND**.", count, amount);
         }
         if (q.contains("taux") || q.contains("recouvrement")) {
-            long paid   = all.stream().filter(i -> "PAID".equals(i.getStatus())).count();
+            long paid2  = all.stream().filter(i -> "PAID".equals(i.getStatus())).count();
             long total  = all.size();
-            return String.format("Votre taux de recouvrement est de **%.1f%%** (%d/%d factures payées).",
-                    total > 0 ? (double) paid / total * 100 : 0, paid, total);
+            return String.format("Votre taux de recouvrement est de **%.1f%%** (%d/%d factures payees).",
+                    total > 0 ? (double) paid2 / total * 100 : 0, paid2, total);
         }
         if (q.contains("client") || q.contains("risque")) {
-            return "Consultez l'onglet **Profils de Solvabilité** pour voir les ratings clients (AAA→CCC).";
+            return "Consultez l'onglet **Profils de Solvabilite** pour voir les ratings clients (AAA a CCC).";
         }
-        return "⚠️ L'assistant IA est temporairement indisponible. Vérifiez votre clé Groq dans application.properties.";
+        return "L'assistant IA est temporairement indisponible. Verifiez votre cle Groq dans application.properties.";
     }
 
     // ─────────────────────────────────────────────────────────

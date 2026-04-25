@@ -3,6 +3,7 @@ package com.marketplace.backend.service.finance;
 import com.marketplace.backend.entity.finance.Invoice;
 import com.marketplace.backend.repository.finance.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -27,19 +28,29 @@ import java.util.stream.Collectors;
  *  → Credit Rating : AAA / AA / A / BBB / BB / B / CCC
  *  → Payment Prediction : probabilité 0–100% par facture
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ClientSolvabilityService {
 
     private final InvoiceRepository invoiceRepository;
+    private final EnterpriseContextHelper enterpriseContext;
 
     // ═══════════════════════════════════════════════════════════
     //  POINT D'ENTRÉE
     // ═══════════════════════════════════════════════════════════
     public SolvabilityReport generateSolvabilityReport() {
-        List<Invoice> all = invoiceRepository.findAll();
+        // 🏢 Filtrer par entreprise connectee
+        String companyName = enterpriseContext.getCurrentCompanyName();
+        List<Invoice> all;
+        if (companyName != null) {
+            all = invoiceRepository.findByEnterpriseCompanyName(companyName);
+            log.info("[SOLVABILITY] Rapport pour '{}' — {} factures", companyName, all.size());
+        } else {
+            all = invoiceRepository.findAll();
+        }
 
-        // 1. Profils de solvabilité par client
+        // 1. Profils de solvabilite par client
         List<ClientSolvabilityProfile> profiles = buildClientProfiles(all);
 
         // 2. Prédictions de paiement par facture UNPAID

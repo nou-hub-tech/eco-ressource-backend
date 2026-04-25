@@ -3,6 +3,7 @@ package com.marketplace.backend.service.finance;
 import com.marketplace.backend.entity.finance.Invoice;
 import com.marketplace.backend.repository.finance.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -18,17 +19,27 @@ import java.util.stream.Collectors;
  *  - Niveau de risque : CRITIQUE / ÉLEVÉ / MOYEN / FAIBLE
  *  - Recommandations d'action personnalisées
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InvoiceRiskService {
 
     private final InvoiceRepository invoiceRepository;
+    private final EnterpriseContextHelper enterpriseContext;
 
     // ══════════════════════════════════════════════
     //  POINT D'ENTRÉE
     // ══════════════════════════════════════════════
     public RiskReport generateRiskReport() {
-        List<Invoice> all = invoiceRepository.findAll();
+        // 🏢 Filtrer par entreprise connectee
+        String companyName = enterpriseContext.getCurrentCompanyName();
+        List<Invoice> all;
+        if (companyName != null) {
+            all = invoiceRepository.findByEnterpriseCompanyName(companyName);
+            log.info("[RISK] Rapport pour '{}' — {} factures", companyName, all.size());
+        } else {
+            all = invoiceRepository.findAll();
+        }
 
         List<InvoiceRisk>  invoiceRisks = analyzeInvoices(all);
         List<ClientRisk>   clientRisks  = analyzeClients(all);
