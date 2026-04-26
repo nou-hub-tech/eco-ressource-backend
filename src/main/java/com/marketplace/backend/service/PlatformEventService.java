@@ -50,6 +50,7 @@ public class PlatformEventService {
             .participants(req.getParticipants())
             .status(EventStatus.valueOf(req.getStatus().toLowerCase(Locale.ROOT)))
             .typeLabel(req.getTypeLabel())
+            .description(req.getDescription())
             .build();
     
 
@@ -73,6 +74,7 @@ public class PlatformEventService {
     e.setParticipants(req.getParticipants());
     e.setStatus(EventStatus.valueOf(req.getStatus().toLowerCase(Locale.ROOT)));
     e.setTypeLabel(req.getTypeLabel());
+    e.setDescription(req.getDescription());
 
      return mapToResponse(platformEventRepository.save(e));
   }
@@ -109,6 +111,7 @@ private PlatformEventResponse toNearbyResponse(PlatformEvent e, Double lat, Doub
       .participants(e.getParticipants())
       .status(e.getStatus().name())
       .typeLabel(e.getTypeLabel())
+      .description(e.getDescription())
       .createdAt(e.getCreatedAt())
       .distance(distance)
       .build();
@@ -173,6 +176,7 @@ private PlatformEventResponse toNearbyResponse(PlatformEvent e, Double lat, Doub
       .participants(e.getParticipants())
       .status(e.getStatus().name())
       .typeLabel(e.getTypeLabel())
+      .description(e.getDescription())
       .createdAt(e.getCreatedAt())
       .build();
 }

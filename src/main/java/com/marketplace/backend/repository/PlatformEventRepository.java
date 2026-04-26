@@ -32,4 +32,6 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, Lo
       @Param("maxParticipants") Integer maxParticipants,
       Pageable pageable);
 
+  List<PlatformEvent> findByEventDate(LocalDate eventDate);
+
 }

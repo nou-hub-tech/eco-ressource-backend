@@ -22,4 +22,6 @@ public class PlatformEventRequest {
   @NotBlank private String status;
 
   @NotBlank private String typeLabel;
+
+  private String description;
 }

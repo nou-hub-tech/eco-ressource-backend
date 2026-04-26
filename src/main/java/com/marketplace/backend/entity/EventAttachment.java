@@ -1,17 +1,15 @@
 package com.marketplace.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.marketplace.backend.entity.enums.EventStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,53 +18,42 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "platform_events")
+@Table(name = "event_attachments")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PlatformEvent {
+public class EventAttachment {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @Column(nullable = false)
-  private String title;
+  private String fileName;
 
   @Column(nullable = false)
-  private LocalDate eventDate;
+  private String fileType;
 
   @Column(nullable = false)
-  private Double latitude;
-  @Column(nullable = false)
-  private Double longitude;
+  private String filePath;
 
   @Column(nullable = false)
-  private String location;
+  private Long fileSize;
+
+  @ManyToOne
+  @JoinColumn(name = "event_id", nullable = false)
+  private PlatformEvent platformEvent;
 
   @Column(nullable = false)
-  private Integer participants;
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private EventStatus status;
-
-  @Column(nullable = false)
-  private String typeLabel;
-
-  @Column(columnDefinition = "TEXT")
-  private String description;
-
-  @Column(nullable = false)
-  private LocalDateTime createdAt;
+  private LocalDateTime uploadedAt;
 
   @PrePersist
   public void prePersist() {
-    if (createdAt == null) {
-      createdAt = LocalDateTime.now();
+    if (uploadedAt == null) {
+      uploadedAt = LocalDateTime.now();
     }
   }
 }

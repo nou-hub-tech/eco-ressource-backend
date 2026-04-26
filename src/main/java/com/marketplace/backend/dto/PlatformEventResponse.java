@@ -21,6 +21,7 @@ public class PlatformEventResponse {
   private Integer participants;
   private String status;
   private String typeLabel;
+  private String description;
   private LocalDateTime createdAt;
 
   private Double distance;

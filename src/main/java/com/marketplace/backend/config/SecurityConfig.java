@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import jakarta.servlet.DispatcherType;
+
 
 @Configuration
 @EnableWebSecurity
@@ -53,15 +55,18 @@ public class SecurityConfig {
     HttpSecurity http, 
     AuthenticationProvider authenticationProvider,
     CorsConfigurationSource corsConfigurationSource) throws Exception {
+      
     http.cors(c -> c.configurationSource(corsConfigurationSource))
         .csrf(csrf -> csrf.disable())
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/auth/**", "/error", "/v3/api-docs/**",
-                "/swagger-ui/**",
-                "/swagger-ui.html")
+                auth.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                .requestMatchers("/api/auth/**", "/v3/api-docs/**",
+  "/swagger-ui/**", "/swagger-ui.html")
+                    .permitAll()
+                    .requestMatchers("/error")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/listings/create")
                     .hasAnyRole("ENTERPRISE", "ADMIN")
@@ -73,6 +78,7 @@ public class SecurityConfig {
                     .hasRole("ADMIN")
                     .requestMatchers("/api/platform-events/**")
                     .permitAll()
+                    .requestMatchers("/api/ai/**").authenticated()
                     .requestMatchers("/api/solidarity-associations/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/enterprises/**")
