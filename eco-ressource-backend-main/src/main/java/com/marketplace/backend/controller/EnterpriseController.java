@@ -26,7 +26,7 @@ public class EnterpriseController {
   private final EnterpriseService enterpriseService;
 
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'ENTERPRISE')")
   public ResponseEntity<List<Enterprise>> list() {
     return ResponseEntity.ok(enterpriseService.findAll());
   }
