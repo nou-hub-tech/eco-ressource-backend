@@ -2,8 +2,11 @@ package com.marketplace.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.marketplace.backend.entity.enums.CommentModerationStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -39,6 +42,16 @@ public class Comment {
   @Column(nullable = false, length = 2000)
   private String content;
 
+  @Enumerated(EnumType.STRING)
+  @Column
+  private CommentModerationStatus moderationStatus;
+
+  @Column
+  private Double toxicityScore;
+
+  @Column(length = 500)
+  private String moderationReason;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
@@ -65,6 +78,12 @@ public class Comment {
   public void prePersist() {
     if (createdAt == null) {
       createdAt = LocalDateTime.now();
+    }
+    if (moderationStatus == null) {
+      moderationStatus = CommentModerationStatus.VISIBLE;
+    }
+    if (toxicityScore == null) {
+      toxicityScore = 0.0;
     }
   }
 }

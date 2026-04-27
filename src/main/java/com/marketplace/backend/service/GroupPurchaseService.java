@@ -25,6 +25,7 @@ public class GroupPurchaseService {
   private final GroupParticipantRepository participantRepository;
   private final EnterpriseRepository enterpriseRepository;
   private final TransporterRepository transporterRepository;
+  private final RealtimeNotificationService realtimeNotificationService;
 
   @Transactional(readOnly = true)
   public GroupPurchaseResponse getById(Long groupId) {
@@ -32,7 +33,10 @@ public class GroupPurchaseService {
         groupPurchaseRepository
             .findById(groupId)
             .orElseThrow(() -> new IllegalArgumentException("Group not found"));
-    return toResponse(group);
+    GroupPurchaseResponse response = toResponse(group);
+    realtimeNotificationService.groupChanged(group.getListing().getId(), group.getId(), response);
+    notifyListingOwner(group, "GROUP_JOINED", "Une entreprise a rejoint votre achat groupe", response);
+    return response;
   }
 
   @Transactional
@@ -87,7 +91,10 @@ public class GroupPurchaseService {
 
     groupPurchaseRepository.save(group);
 
-    return toResponse(group);
+    GroupPurchaseResponse response = toResponse(group);
+    realtimeNotificationService.groupChanged(group.getListing().getId(), group.getId(), response);
+    notifyListingOwner(group, "GROUP_LEFT", "Une entreprise a quitte votre achat groupe", response);
+    return response;
   }
 
   @Transactional
@@ -176,6 +183,23 @@ public class GroupPurchaseService {
                 transporterRepository
                     .findById(companyId)
                     .map(t -> t.getCompanyName())
-                    .orElse(null));
+                .orElse(null));
+  }
+
+  private void notifyListingOwner(GroupPurchase group, String type, String message, Object payload) {
+    Long companyId = group.getListing().getCompanyId();
+    Long ownerUserId =
+        enterpriseRepository
+            .findById(companyId)
+            .map(e -> e.getUser().getId())
+            .orElseGet(
+                () ->
+                    transporterRepository
+                        .findById(companyId)
+                        .map(t -> t.getUser().getId())
+                        .orElse(null));
+    if (ownerUserId != null) {
+      realtimeNotificationService.notifyUser(ownerUserId, type, message, payload);
+    }
   }
 }

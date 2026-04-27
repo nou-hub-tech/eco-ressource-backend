@@ -1,5 +1,6 @@
 package com.marketplace.backend.dto;
 
+import com.marketplace.backend.entity.enums.CommentModerationStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
@@ -16,5 +17,8 @@ public class CommentResponse {
   private Long listingId;
   private Long parentId;
   private LocalDateTime createdAt;
+  private CommentModerationStatus moderationStatus;
+  private Double toxicityScore;
+  private String moderationReason;
   private List<CommentResponse> replies;
 }

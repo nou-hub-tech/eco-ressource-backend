@@ -2,13 +2,16 @@ package com.marketplace.backend.service;
 
 import com.marketplace.backend.dto.CreateListingRequest;
 import com.marketplace.backend.dto.GroupPurchaseResponse;
+import com.marketplace.backend.dto.ListingMatchResponse;
 import com.marketplace.backend.dto.ListingResponse;
 import com.marketplace.backend.entity.GroupPurchase;
 import com.marketplace.backend.entity.GroupParticipant;
 import com.marketplace.backend.entity.PostAttachment;
 import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.ResourceListing;
+import com.marketplace.backend.entity.User;
 import com.marketplace.backend.entity.enums.GroupPurchaseStatus;
+import com.marketplace.backend.entity.enums.Role;
 import com.marketplace.backend.entity.enums.ResourceListingStatus;
 import com.marketplace.backend.entity.enums.ListingType;
 import com.marketplace.backend.repository.CommentRepository;
@@ -20,6 +23,9 @@ import com.marketplace.backend.repository.PostAttachmentRepository;
 import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.ResourceListingRepository;
 import com.marketplace.backend.repository.TransporterRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +45,7 @@ public class ResourceListingService {
   private final CommentRepository commentRepository;
   private final EnterpriseRepository enterpriseRepository;
   private final TransporterRepository transporterRepository;
+  private final RealtimeNotificationService realtimeNotificationService;
 
   @Transactional
   public ListingResponse create(CreateListingRequest req) {
@@ -107,7 +114,9 @@ public class ResourceListingService {
       listing.setGroupPurchase(group);
     }
 
-    return toResponse(listing);
+    ListingResponse response = toResponse(listing);
+    realtimeNotificationService.listingChanged("LISTING_CREATED", listing.getId(), response);
+    return response;
   }
 
   @Transactional(readOnly = true)
@@ -118,12 +127,31 @@ public class ResourceListingService {
   }
 
   @Transactional(readOnly = true)
+  public List<ListingResponse> findAllForAdmin() {
+    return listingRepository.findAll().stream()
+        .map(this::toResponse)
+        .sorted(Comparator.comparing(ListingResponse::getCreatedAt).reversed())
+        .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  public List<ListingResponse> findMine(User user) {
+    Long companyId = resolveActorCompanyId(user);
+    return listingRepository.findByCompanyId(companyId).stream()
+        .map(this::toResponse)
+        .sorted(Comparator.comparing(ListingResponse::getCreatedAt).reversed())
+        .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
   public ListingResponse getById(Long id) {
     ResourceListing listing =
         listingRepository
             .findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
-    return toResponse(listing);
+    ListingResponse response = toResponse(listing);
+    realtimeNotificationService.listingChanged("LISTING_UPDATED", listing.getId(), response);
+    return response;
   }
 
   @Transactional(readOnly = true)
@@ -152,6 +180,55 @@ public class ResourceListingService {
     }
 
     return results.stream().map(this::toResponse).collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  public List<ListingResponse> trending(int limit) {
+    return listingRepository.findByStatus(ResourceListingStatus.ACTIVE).stream()
+        .map(this::toResponse)
+        .sorted(Comparator.comparingInt(this::popularityScore).reversed())
+        .limit(Math.max(1, Math.min(limit, 20)))
+        .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  public List<ListingMatchResponse> match(Long listingId, int limit) {
+    ListingResponse source = getById(listingId);
+    return listingRepository.findByStatus(ResourceListingStatus.ACTIVE).stream()
+        .filter(l -> !l.getId().equals(listingId))
+        .map(this::toResponse)
+        .map(candidate -> toMatch(source, candidate))
+        .filter(m -> m.getScore() > 0)
+        .sorted(Comparator.comparing(ListingMatchResponse::getScore).reversed())
+        .limit(Math.max(1, Math.min(limit, 12)))
+        .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  public BigDecimal suggestPrice(Long productId, String category, String location) {
+    List<ResourceListing> listings = listingRepository.findByStatus(ResourceListingStatus.ACTIVE);
+    List<BigDecimal> prices =
+        listings.stream()
+            .filter(l -> l.getPrice() != null)
+            .filter(l -> productId == null || l.getProduct().getIdProduct().equals(productId))
+            .filter(l -> category == null || category.isBlank()
+                || category.equalsIgnoreCase(l.getProduct().getCategory()))
+            .filter(l -> location == null || location.isBlank()
+                || (l.getLocation() != null
+                    && l.getLocation().toLowerCase().contains(location.toLowerCase())))
+            .map(ResourceListing::getPrice)
+            .toList();
+    if (prices.isEmpty()) {
+      prices = listings.stream()
+          .filter(l -> l.getPrice() != null)
+          .map(ResourceListing::getPrice)
+          .toList();
+    }
+    if (prices.isEmpty()) {
+      return BigDecimal.ZERO;
+    }
+    BigDecimal total = prices.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+    return total.divide(BigDecimal.valueOf(prices.size()), 2, RoundingMode.HALF_UP);
   }
 
   @Transactional
@@ -227,7 +304,9 @@ public class ResourceListingService {
           PostAttachment.builder().fileUrl(att.getFileUrl()).listing(copy).build());
     }
 
-    return toResponse(copy);
+    ListingResponse response = toResponse(copy);
+    realtimeNotificationService.listingChanged("LISTING_CREATED", copy.getId(), response);
+    return response;
   }
 
   @Transactional
@@ -252,6 +331,25 @@ public class ResourceListingService {
       gp.setStatus(GroupPurchaseStatus.CLOSED);
       groupPurchaseRepository.save(gp);
     }
+    realtimeNotificationService.listingChanged("LISTING_CANCELLED", listing.getId(), toResponse(listing));
+  }
+
+  @Transactional
+  public void delete(Long id, User actor) {
+    ResourceListing listing =
+        listingRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
+
+    boolean isAdmin = actor.getRole() == Role.ROLE_ADMIN;
+    boolean isOwner = listing.getCompanyId().equals(resolveActorCompanyIdOrNull(actor));
+    if (!isAdmin && !isOwner) {
+      throw new IllegalArgumentException("Only the listing owner or admin can delete");
+    }
+
+    ListingResponse response = toResponse(listing);
+    listingRepository.delete(listing);
+    realtimeNotificationService.listingChanged("LISTING_DELETED", id, response);
   }
 
   private ListingResponse toResponse(ResourceListing listing) {
@@ -307,6 +405,53 @@ public class ResourceListingService {
         .build();
   }
 
+  private int popularityScore(ListingResponse l) {
+    int groupBoost = l.getGroupPurchase() == null ? 0 : l.getGroupPurchase().getParticipants().size() * 5;
+    return (int) (l.getFavoriteCount() * 4 + l.getCommentCount() * 3 + groupBoost);
+  }
+
+  private ListingMatchResponse toMatch(ListingResponse source, ListingResponse candidate) {
+    int score = 0;
+    StringBuilder reason = new StringBuilder();
+    if (safeEquals(source.getProductCategory(), candidate.getProductCategory())) {
+      score += 35;
+      reason.append("meme categorie; ");
+    }
+    if (source.getType() != null && candidate.getType() != null && !source.getType().equals(candidate.getType())) {
+      score += 20;
+      reason.append("type complementaire; ");
+    }
+    if (safeContains(source.getLocation(), candidate.getLocation())) {
+      score += 20;
+      reason.append("localisation proche; ");
+    }
+    if (source.getPrice() != null && candidate.getPrice() != null) {
+      double a = source.getPrice().doubleValue();
+      double b = candidate.getPrice().doubleValue();
+      if (a > 0 && Math.abs(a - b) / a <= 0.25) {
+        score += 15;
+        reason.append("prix proche; ");
+      }
+    }
+    score += Math.min(10, popularityScore(candidate));
+    return ListingMatchResponse.builder()
+        .listing(candidate)
+        .score(Math.min(score, 100))
+        .reason(reason.length() == 0 ? "annonce pertinente" : reason.toString())
+        .build();
+  }
+
+  private boolean safeEquals(String a, String b) {
+    return a != null && b != null && a.equalsIgnoreCase(b);
+  }
+
+  private boolean safeContains(String a, String b) {
+    if (a == null || b == null) return false;
+    String aa = a.toLowerCase();
+    String bb = b.toLowerCase();
+    return aa.contains(bb) || bb.contains(aa);
+  }
+
   private List<GroupPurchaseResponse.ParticipantInfo> toParticipantResponses(Long groupId) {
     return participantRepository.findByGroupId(groupId).stream()
         .map(this::toParticipantResponse)
@@ -334,7 +479,28 @@ public class ResourceListingService {
                 transporterRepository
                     .findById(companyId)
                     .map(t -> t.getCompanyName())
-                    .orElse(null));
+                .orElse(null));
+  }
+
+  private Long resolveActorCompanyId(User user) {
+    Long companyId = resolveActorCompanyIdOrNull(user);
+    if (companyId == null) {
+      throw new IllegalArgumentException("Enterprise or transporter profile required");
+    }
+    return companyId;
+  }
+
+  private Long resolveActorCompanyIdOrNull(User user) {
+    if (user == null) {
+      return null;
+    }
+    if (user.getEnterprise() != null) {
+      return user.getEnterprise().getId();
+    }
+    if (user.getTransporter() != null) {
+      return user.getTransporter().getId();
+    }
+    return null;
   }
 
   /** Garde-fou aligné avec le front (~5 Mo fichier → ~7 Mo en Data URL). */

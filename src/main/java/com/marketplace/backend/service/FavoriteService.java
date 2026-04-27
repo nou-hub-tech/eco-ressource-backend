@@ -6,6 +6,8 @@ import com.marketplace.backend.entity.ResourceListing;
 import com.marketplace.backend.entity.User;
 import com.marketplace.backend.repository.FavoriteRepository;
 import com.marketplace.backend.repository.ResourceListingRepository;
+import com.marketplace.backend.repository.EnterpriseRepository;
+import com.marketplace.backend.repository.TransporterRepository;
 import com.marketplace.backend.repository.UserRepository;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +22,9 @@ public class FavoriteService {
   private final FavoriteRepository favoriteRepository;
   private final ResourceListingRepository listingRepository;
   private final UserRepository userRepository;
+  private final EnterpriseRepository enterpriseRepository;
+  private final TransporterRepository transporterRepository;
+  private final RealtimeNotificationService realtimeNotificationService;
 
   @Transactional
   public FavoriteResponse add(Long listingId, Long userId) {
@@ -40,7 +45,10 @@ public class FavoriteService {
     Favorite favorite = Favorite.builder().user(user).listing(listing).build();
     favorite = favoriteRepository.save(favorite);
 
-    return toResponse(favorite);
+    FavoriteResponse response = toResponse(favorite);
+    realtimeNotificationService.favoriteChanged(listingId, response);
+    notifyListingOwner(listing, "FAVORITE_ADDED", user.getFullName() + " a ajoute votre annonce aux favoris", response);
+    return response;
   }
 
   @Transactional
@@ -49,7 +57,9 @@ public class FavoriteService {
         favoriteRepository
             .findByUserIdAndListingId(userId, listingId)
             .orElseThrow(() -> new IllegalArgumentException("Favorite not found"));
+    ResourceListing listing = favorite.getListing();
     favoriteRepository.delete(favorite);
+    realtimeNotificationService.favoriteChanged(listingId, toResponse(favorite));
   }
 
   @Transactional(readOnly = true)
@@ -66,5 +76,25 @@ public class FavoriteService {
         .listingId(favorite.getListing().getId())
         .listingTitle(favorite.getListing().getTitle())
         .build();
+  }
+
+  private void notifyListingOwner(
+      ResourceListing listing, String type, String message, FavoriteResponse payload) {
+    Long ownerUserId = null;
+    if (listing.getCompanyId() != null) {
+      ownerUserId =
+          enterpriseRepository
+              .findById(listing.getCompanyId())
+              .map(e -> e.getUser().getId())
+              .orElseGet(
+                  () ->
+                      transporterRepository
+                          .findById(listing.getCompanyId())
+                          .map(t -> t.getUser().getId())
+                          .orElse(null));
+    }
+    if (ownerUserId != null) {
+      realtimeNotificationService.notifyUser(ownerUserId, type, message, payload);
+    }
   }
 }
