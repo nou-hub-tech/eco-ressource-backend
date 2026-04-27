@@ -12,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,9 +47,9 @@ public class EnterpriseController {
     private Enterprise getEnterprise(Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found: " + email));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "User not found: " + email));
         return enterpriseRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("No enterprise linked to this user"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "This account is not linked to an enterprise"));
     }
 
     // ════════════════════════════════════════
@@ -281,4 +283,118 @@ public class EnterpriseController {
     private String blankToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
     }
+
+    // ═══════════════════════════════════════════════════════════
+    //  MARKET STOCK — items from other enterprises (or unowned)
+    //  Sorted: items whose product.category matches enterprise
+    //  sector come FIRST, then the rest alphabetically.
+    // ═══════════════════════════════════════════════════════════
+    @GetMapping("/market-stock")
+    public ResponseEntity<?> getMarketStock(Authentication auth) {
+        Enterprise me = getEnterprise(auth);
+        String mySector = me.getSector() != null ? me.getSector().trim().toLowerCase() : "";
+
+        List<StockItem> items = stockItemRepository.findMarketStock(me.getId());
+
+        // Build response DTOs, priority flag = category matches my sector
+        java.util.List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (StockItem s : items) {
+            String productCategory = s.getProduct() != null && s.getProduct().getCategory() != null
+                    ? s.getProduct().getCategory().trim().toLowerCase() : "";
+            String productName = s.getProduct() != null ? s.getProduct().getName() : "Unknown";
+            String productImage = s.getProduct() != null ? s.getProduct().getImage() : null;
+            String material = s.getProduct() != null ? s.getProduct().getMaterialType() : null;
+            boolean recyclable = s.getProduct() != null && s.getProduct().isRecyclable();
+            Long ownerEnterpriseId = s.getEnterprise() != null ? s.getEnterprise().getId() : null;
+            String ownerName = s.getEnterprise() != null ? s.getEnterprise().getCompanyName() : "Platform";
+
+            boolean priorityMatch = !mySector.isEmpty() && productCategory.contains(mySector);
+
+            Map<String, Object> item = new java.util.LinkedHashMap<>();
+            item.put("id", s.getIdStock());
+            item.put("productName", productName);
+            item.put("productImage", productImage);
+            item.put("category", s.getProduct() != null ? s.getProduct().getCategory() : null);
+            item.put("materialType", material);
+            item.put("recyclable", recyclable);
+            item.put("quantity", s.getQuantity());
+            item.put("unit", s.getUnit());
+            item.put("unitPrice", s.getUnitPrice());
+            item.put("status", s.getStatus());
+            item.put("condition", s.getCondition());
+            item.put("location", s.getLocation());
+            item.put("ownerEnterpriseId", ownerEnterpriseId);
+            item.put("ownerName", ownerName);
+            item.put("priorityMatch", priorityMatch);
+            result.add(item);
+        }
+
+        // Sort: priority matches first, then alphabetically by product name
+        result.sort((a, b) -> {
+            boolean pa = Boolean.TRUE.equals(a.get("priorityMatch"));
+            boolean pb = Boolean.TRUE.equals(b.get("priorityMatch"));
+            if (pa != pb) return pa ? -1 : 1;
+            return String.valueOf(a.get("productName")).compareTo(String.valueOf(b.get("productName")));
+        });
+
+        return ResponseEntity.ok(result);
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  MARKET PRODUCTS — products from other enterprises & admin
+    //  Excludes the logged-in enterprise's own products
+    // ═══════════════════════════════════════════════════════════
+    @GetMapping("/market-products")
+    public ResponseEntity<?> getMarketProducts(Authentication auth) {
+        Enterprise me = getEnterprise(auth);
+        String mySector = me.getSector() != null ? me.getSector().trim().toLowerCase() : "";
+
+        List<Product> products = productRepository.findMarketProducts(me.getId());
+
+        java.util.List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (Product p : products) {
+            String productCategory = p.getCategory() != null ? p.getCategory().trim().toLowerCase() : "";
+            boolean priorityMatch = !mySector.isEmpty() && productCategory.contains(mySector);
+            String ownerName = p.getEnterprise() != null ? p.getEnterprise().getCompanyName() : "Platform";
+
+            Map<String, Object> item = new java.util.LinkedHashMap<>();
+            item.put("id", p.getId_product());
+            item.put("productName", p.getName());
+            item.put("productImage", p.getImage() != null && p.getImage().startsWith("http")
+                    ? p.getImage()
+                    : (p.getImage() != null ? "http://localhost:8080/files/" + p.getImage() : null));
+            item.put("category", p.getCategory());
+            item.put("materialType", p.getMaterialType());
+            item.put("recyclable", p.isRecyclable());
+            item.put("description", p.getDescription());
+            item.put("ownerEnterpriseId", p.getEnterpriseId());
+            item.put("ownerName", ownerName);
+            item.put("priorityMatch", priorityMatch);
+
+            // Include first available stock item info for reclamation form
+            java.util.List<com.marketplace.backend.entity.StockItem> stocks =
+                    stockItemRepository.findByProductId(p.getId_product());
+            if (!stocks.isEmpty()) {
+                com.marketplace.backend.entity.StockItem si = stocks.get(0);
+                item.put("stockItemId",  si.getIdStock());
+                item.put("stockQty",     si.getQuantity());
+                item.put("stockUnit",    si.getUnit());
+                item.put("unitPrice",    si.getUnitPrice());
+                item.put("totalValue",   si.getQuantity() * si.getUnitPrice());
+            }
+            result.add(item);
+        }
+
+        // Sort: sector matches first, then alphabetically
+        result.sort((a, b) -> {
+            boolean pa = Boolean.TRUE.equals(a.get("priorityMatch"));
+            boolean pb = Boolean.TRUE.equals(b.get("priorityMatch"));
+            if (pa != pb) return pa ? -1 : 1;
+            return String.valueOf(a.get("productName")).compareTo(String.valueOf(b.get("productName")));
+        });
+
+        return ResponseEntity.ok(result);
+    }
+
 }

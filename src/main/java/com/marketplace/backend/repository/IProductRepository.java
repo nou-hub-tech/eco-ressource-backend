@@ -36,4 +36,8 @@ public interface IProductRepository extends JpaRepository<Product, Long> {
     List<Product> searchByEnterprise(@Param("enterpriseId") Long enterpriseId,
                                      @Param("name") String name,
                                      @Param("category") String category);
+
+    // Market products: eagerly fetch enterprise in one query to avoid N+1, exclude own products
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.enterprise e WHERE (p.enterprise IS NULL OR e.id <> :enterpriseId)")
+    List<Product> findMarketProducts(@Param("enterpriseId") Long enterpriseId);
 }

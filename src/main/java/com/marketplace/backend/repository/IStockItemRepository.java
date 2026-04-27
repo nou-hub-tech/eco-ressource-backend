@@ -127,4 +127,13 @@ public interface IStockItemRepository extends JpaRepository<StockItem, Long> {
     // Valeur totale du stock d'une entreprise
     @Query("SELECT COALESCE(SUM(s.quantity * s.unitPrice), 0) FROM StockItem s WHERE s.enterprise.id = :enterpriseId AND s.deleted = false")
     Double calculateTotalStockValueByEnterprise(@Param("enterpriseId") Long enterpriseId);
+
+    // ── Market stock: items NOT owned by a given enterprise (incl. null owner), non-deleted ──
+    @Query("""
+        SELECT s FROM StockItem s
+        WHERE s.deleted = false
+          AND (s.enterprise IS NULL OR s.enterprise.id <> :enterpriseId)
+    """)
+    List<StockItem> findMarketStock(@Param("enterpriseId") Long enterpriseId);
+
 }
