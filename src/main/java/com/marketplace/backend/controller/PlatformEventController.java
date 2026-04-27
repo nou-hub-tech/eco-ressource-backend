@@ -5,6 +5,7 @@ import com.marketplace.backend.dto.PlatformEventRequest;
 import com.marketplace.backend.dto.PlatformEventResponse;
 import com.marketplace.backend.entity.PlatformEvent;
 import com.marketplace.backend.service.PlatformEventService;
+import com.marketplace.backend.service.FacebookService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlatformEventController {
 
   private final PlatformEventService platformEventService;
+  private final FacebookService facebookService;
 
   @GetMapping
   public ResponseEntity<List<PlatformEventResponse>> list() {
@@ -88,4 +90,19 @@ public class PlatformEventController {
     Page<PlatformEventResponse> events = platformEventService.searchEvents(searchRequest);
     return ResponseEntity.ok(events);
   }
+
+  @PostMapping("/{id}/publish-facebook")
+public ResponseEntity<String> publishToFacebook(@PathVariable Long id) {
+  try {
+    String result = facebookService.publishEvent(id);
+    return ResponseEntity.ok(result);
+  } catch (IllegalStateException e) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+        .body("Facebook not configured: " + e.getMessage());
+  } catch (Exception e) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body("Publish failed: " + e.getMessage());
+  }
+}
+
 }
