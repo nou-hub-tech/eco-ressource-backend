@@ -67,7 +67,7 @@ public class ShipmentController {
         return shipmentService.findByProduitId(produitId);
     }
 
-    //  RECHERCHE par quantité (NOUVEAU)
+    //  RECHERCHE par quantité 
     @GetMapping("/search/quantite")
     public List<Shipment> searchByQuantite(@RequestParam Double quantite) {
         return shipmentService.findByQuantite(quantite);

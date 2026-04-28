@@ -20,7 +20,7 @@ public class NotificationService {
 
         userNotifications.computeIfAbsent(userId, k -> new ArrayList<>()).add(notification);
 
-        System.out.println("📢 Notification ajoutée pour l'utilisateur " + userId);
+        System.out.println(" Notification ajoutée pour l'utilisateur " + userId);
         return notification;
     }
 
