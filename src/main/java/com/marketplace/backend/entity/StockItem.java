@@ -1,71 +1,82 @@
 package com.marketplace.backend.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.marketplace.backend.entity.enums.StockItemStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import java.util.Date;
 
 @Entity
-@Table(name = "stock_items")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class StockItem {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_stock")
+    private Long idStock;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "enterprise_id", nullable = false)
-  private Enterprise enterprise;
+    private int quantity;
+    private double unitPrice;
+    private String status;
+    private String location;
+    private String unit;
 
-  @Column(nullable = false)
-  private String name;
+    @Column(name = "item_condition")
+    private String condition;
 
-  @Column(nullable = false)
-  private String category;
+    private String image;
 
-  @Column(nullable = false)
-  private Integer quantity;
+    @Temporal(TemporalType.DATE)
+    private Date expirationDate;
 
-  @Column(nullable = false)
-  private String unit;
+    @ManyToOne
+    @JoinColumn(name = "id_product")
+    private Product product;
 
-  private String conditionLabel;
+    @Column(nullable = false)
+    private boolean deleted = false;  // ✅ ADD THIS
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enterprise_id")
+    private Enterprise enterprise;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private StockItemStatus status;
+    // + getter et setter
+    public Enterprise getEnterprise() { return enterprise; }
+    public void setEnterprise(Enterprise enterprise) { this.enterprise = enterprise; }
+    // GETTERS & SETTERS
 
-  private String aiInsight;
-
-  @Column(nullable = false)
-  private LocalDateTime createdAt;
-
-  @PrePersist
-  public void prePersist() {
-    if (createdAt == null) {
-      createdAt = LocalDateTime.now();
+    public Long getIdStock() {
+        return idStock;
     }
-  }
+
+    public void setIdStock(Long idStock) {
+        this.idStock = idStock;
+    }
+
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+
+    public double getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
+
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+
+    public String getCondition() { return condition; }
+    public void setCondition(String condition) { this.condition = condition; }
+
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
+
+    public Date getExpirationDate() { return expirationDate; }
+    public void setExpirationDate(Date expirationDate) { this.expirationDate = expirationDate; }
+
+    public Product getProduct() { return product; }
+    public void setProduct(Product product) { this.product = product; }
+
+    public boolean isDeleted() { return deleted; }  // ✅ ADD THIS
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }  // ✅ ADD THIS
 }

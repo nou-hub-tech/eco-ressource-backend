@@ -3,7 +3,9 @@ package com.marketplace.backend.config;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -24,6 +26,7 @@ public class CorsConfig {
     return source;
   }
 
+
   @Bean
   public RestTemplate restTemplate() {
     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -31,4 +34,5 @@ public class CorsConfig {
     factory.setReadTimeout(15_000);     // 15s lecture (Groq repond en 2-5s)
     return new RestTemplate(factory);
   }
+
 }

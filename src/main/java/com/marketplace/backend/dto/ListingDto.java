@@ -1,6 +1,8 @@
 package com.marketplace.backend.dto;
 
+
 import com.marketplace.backend.entity.Listing;
+
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,6 +35,7 @@ public class ListingDto {
   private String rating;
   private String time;
 
+
   public static ListingDto from(Listing l) {
     String company =
         l.getEnterprise() != null ? l.getEnterprise().getCompanyName() : "";
@@ -50,4 +53,5 @@ public class ListingDto {
         .posted(l.getPostedLabel())
         .build();
   }
+
 }

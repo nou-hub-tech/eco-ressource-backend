@@ -28,6 +28,9 @@ public class AuthService {
   private final AuthenticationManager authenticationManager;
   private final JwtUtils jwtUtils;
 
+  private final UserMapper userMapper;
+
+
   @Transactional(readOnly = true)
   public JwtResponse login(LoginRequest req) {
     Authentication auth =
@@ -38,7 +41,11 @@ public class AuthService {
             .findByEmailWithProfiles(auth.getName())
             .orElseThrow(() -> new IllegalStateException("User missing after auth"));
     String token = jwtUtils.generateToken(user.getEmail(), user.getRole());
-    UserResponseDto dto = UserResponseDto.from(user);
+
+
+
+    UserResponseDto dto = userMapper.toUserResponse(user);
+
     return JwtResponse.builder()
         .token(token)
         .type("Bearer")
@@ -102,7 +109,11 @@ public class AuthService {
         .token(token)
         .type("Bearer")
         .role(reloaded.getRole().name())
+
         .user(UserResponseDto.from(reloaded))
+
+        .user(userMapper.toUserResponse(reloaded))
+
         .build();
   }
 }

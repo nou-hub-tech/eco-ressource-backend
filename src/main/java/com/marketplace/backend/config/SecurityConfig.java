@@ -26,62 +26,76 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final JwtAuthFilter jwtAuthFilter;
-  private final UserDetailsService userDetailsService;
+    private final JwtAuthFilter jwtAuthFilter;
+    private final UserDetailsService userDetailsService;
 
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-  @Bean
-  public AuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
-    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-    provider.setUserDetailsService(userDetailsService);
-    provider.setPasswordEncoder(passwordEncoder);
-    return provider;
-  }
+    @Bean
+    public AuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return provider;
+    }
 
-  @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
-      throws Exception {
-    return config.getAuthenticationManager();
-  }
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
+            throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-  @Bean
-  public SecurityFilterChain securityFilterChain(
-    HttpSecurity http, 
-    AuthenticationProvider authenticationProvider,
-    CorsConfigurationSource corsConfigurationSource) throws Exception {
-    http.cors(c -> c.configurationSource(corsConfigurationSource))
-        .csrf(csrf -> csrf.disable())
-        .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authenticationProvider(authenticationProvider)
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/api/auth/**")
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/listings/create")
-                    .hasAnyRole("ENTERPRISE", "ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/api/transport-offers")
-                    .hasAnyRole("TRANSPORTER", "ADMIN")
-                    .requestMatchers("/api/admin/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/users/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/platform-events/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/solidarity-associations/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/enterprises/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/transporters/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/listings/**")
-                    .authenticated()
-                    .anyRequest()
-                    .authenticated())
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-    return http.build();
-  }
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            AuthenticationProvider authenticationProvider,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
+
+        http.cors(c -> c.configurationSource(corsConfigurationSource))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider)
+
+                .authorizeHttpRequests(auth -> auth
+
+                        // Public routes
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/files/**").permitAll()
+                        .requestMatchers("/stockitem/**").permitAll()
+                        .requestMatchers("/stock-movement/**").permitAll()
+                        .requestMatchers("/product/**").permitAll()
+                        .requestMatchers("/ai/**").permitAll()
+
+                        // Protected POST routes
+                        .requestMatchers(HttpMethod.POST, "/api/listings/create")
+                        .hasAnyAuthority("ENTERPRISE", "ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/transport-offers")
+                        .hasAnyAuthority("TRANSPORTER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/transport/offer")
+                        .hasAnyAuthority("TRANSPORTER", "ADMIN")
+
+                        // Admin routes
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/users/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/platform-events/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/solidarity-associations/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/transporters/**").hasAuthority("ADMIN")
+
+                        // Authenticated routes
+                        .requestMatchers("/api/listings/**").authenticated()
+                        .requestMatchers("/api/transport/**").authenticated()
+                        .requestMatchers("/api/enterprise/**").authenticated()
+
+                        // All others
+                        .anyRequest().authenticated())
+
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
 }

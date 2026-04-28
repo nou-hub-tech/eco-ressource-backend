@@ -1,11 +1,13 @@
 package com.marketplace.backend.dto;
 
+
 import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.Transporter;
 import com.marketplace.backend.entity.User;
 import com.marketplace.backend.entity.enums.Role;
 import com.marketplace.backend.entity.enums.UserAccountStatus;
 import java.time.format.DateTimeFormatter;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,8 +19,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AdminUserDto {
 
+
   private static final DateTimeFormatter JOINED =
       DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
   private String id;
   private String name;
@@ -101,4 +105,5 @@ public class AdminUserDto {
     }
     return ("" + p[0].charAt(0) + p[p.length - 1].charAt(0)).toUpperCase();
   }
+
 }

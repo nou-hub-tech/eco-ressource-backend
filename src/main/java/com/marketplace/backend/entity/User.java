@@ -1,7 +1,9 @@
 package com.marketplace.backend.entity;
 
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import com.marketplace.backend.entity.enums.Role;
 import com.marketplace.backend.entity.enums.UserAccountStatus;
 import jakarta.persistence.CascadeType;
@@ -24,7 +26,9 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "users")
+
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,7 +44,9 @@ public class User {
   private String email;
 
   @Column(nullable = false)
+
   @JsonIgnore
+
   private String password;
 
   @Column(nullable = false)
@@ -66,11 +72,15 @@ public class User {
   private LocalDateTime createdAt;
 
   @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+
   @JsonIgnore
   private Enterprise enterprise;
 
   @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   @JsonIgnore
+
+
+
   private Transporter transporter;
 
   @PrePersist

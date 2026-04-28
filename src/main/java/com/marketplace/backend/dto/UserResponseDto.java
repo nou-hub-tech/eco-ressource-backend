@@ -1,6 +1,8 @@
 package com.marketplace.backend.dto;
 
+
 import com.marketplace.backend.entity.User;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +21,7 @@ public class UserResponseDto {
   private String role;
   private String company;
   private String avatar;
+
 
   public static UserResponseDto from(User u) {
     String routeRole =
@@ -53,4 +56,5 @@ public class UserResponseDto {
     }
     return ("" + p[0].charAt(0) + p[p.length - 1].charAt(0)).toUpperCase();
   }
+
 }
