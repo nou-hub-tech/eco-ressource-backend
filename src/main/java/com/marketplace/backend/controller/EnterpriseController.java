@@ -427,7 +427,7 @@ public class EnterpriseController {
             item.put("productName", p.getName());
             item.put("productImage", p.getImage() != null && p.getImage().startsWith("http")
                     ? p.getImage()
-                    : (p.getImage() != null ? "http://localhost:8080/files/" + p.getImage() : null));
+                    : (p.getImage() != null ? "http://localhost:9090/files/" + p.getImage() : null));
             item.put("category", p.getCategory());
             item.put("materialType", p.getMaterialType());
             item.put("recyclable", p.isRecyclable());

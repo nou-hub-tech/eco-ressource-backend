@@ -1,6 +1,7 @@
 package com.marketplace.backend.dto;
 
-import lombok.Data;
+import
+        lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 @Data

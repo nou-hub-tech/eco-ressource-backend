@@ -60,7 +60,7 @@ public class DefectAnalysisController {
     private String buildImageUrl(String raw) {
         if (raw == null) return null;
         if (raw.startsWith("http")) return raw;
-        return "http://localhost:8080/files/" + raw;
+        return "http://localhost:9090/files/" + raw;
     }
 
     // ── CREATE ───────────────────────────────────────────────────────────────
