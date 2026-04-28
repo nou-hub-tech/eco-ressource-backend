@@ -33,10 +33,7 @@ public class GroupPurchaseService {
         groupPurchaseRepository
             .findById(groupId)
             .orElseThrow(() -> new IllegalArgumentException("Group not found"));
-    GroupPurchaseResponse response = toResponse(group);
-    realtimeNotificationService.groupChanged(group.getListing().getId(), group.getId(), response);
-    notifyListingOwner(group, "GROUP_JOINED", "Une entreprise a rejoint votre achat groupe", response);
-    return response;
+    return toResponse(group);
   }
 
   @Transactional
@@ -93,7 +90,7 @@ public class GroupPurchaseService {
 
     GroupPurchaseResponse response = toResponse(group);
     realtimeNotificationService.groupChanged(group.getListing().getId(), group.getId(), response);
-    notifyListingOwner(group, "GROUP_LEFT", "Une entreprise a quitte votre achat groupe", response);
+    notifyListingOwner(group, "GROUP_JOINED", "Une entreprise a rejoint votre achat groupe", response);
     return response;
   }
 
@@ -125,7 +122,10 @@ public class GroupPurchaseService {
     participantRepository.delete(participant);
     groupPurchaseRepository.save(group);
 
-    return toResponse(group);
+    GroupPurchaseResponse response = toResponse(group);
+    realtimeNotificationService.groupChanged(group.getListing().getId(), group.getId(), response);
+    notifyListingOwner(group, "GROUP_LEFT", "Une entreprise a quitte votre achat groupe", response);
+    return response;
   }
 
   @Transactional(readOnly = true)

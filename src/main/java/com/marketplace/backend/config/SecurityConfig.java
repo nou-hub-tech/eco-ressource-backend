@@ -72,7 +72,7 @@ public class SecurityConfig {
                         "/v3/api-docs/**",
                         "/v3/api-docs")
                     .permitAll()
-                    .requestMatchers("/ws/**")
+                    .requestMatchers("/ws", "/ws/**", "/ws-sockjs", "/ws-sockjs/**")
                     .permitAll()
                     .requestMatchers("/files/**")
                     .permitAll()

@@ -397,6 +397,7 @@ public class ResourceListingService {
         .productCategory(listing.getProduct().getCategory())
         .companyId(listing.getCompanyId())
         .companyName(resolveCompanyName(listing.getCompanyId()))
+        .ownerFullName(resolveOwnerFullName(listing.getCompanyId()))
         .createdAt(listing.getCreatedAt())
         .attachmentUrls(attachmentUrls)
         .groupPurchase(gpResponse)
@@ -480,6 +481,21 @@ public class ResourceListingService {
                     .findById(companyId)
                     .map(t -> t.getCompanyName())
                 .orElse(null));
+  }
+
+  private String resolveOwnerFullName(Long companyId) {
+    if (companyId == null) {
+      return null;
+    }
+    return enterpriseRepository
+        .findById(companyId)
+        .map(e -> e.getUser().getFullName())
+        .orElseGet(
+            () ->
+                transporterRepository
+                    .findById(companyId)
+                    .map(t -> t.getUser().getFullName())
+                    .orElse(null));
   }
 
   private Long resolveActorCompanyId(User user) {
