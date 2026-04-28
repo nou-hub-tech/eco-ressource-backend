@@ -44,48 +44,60 @@ public class SecurityConfig {
 
   @Bean
   public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
-      throws Exception {
+          throws Exception {
     return config.getAuthenticationManager();
   }
 
   @Bean
   public SecurityFilterChain securityFilterChain(
-    HttpSecurity http, 
-    AuthenticationProvider authenticationProvider,
-    CorsConfigurationSource corsConfigurationSource) throws Exception {
+          HttpSecurity http,
+          AuthenticationProvider authenticationProvider,
+          CorsConfigurationSource corsConfigurationSource) throws Exception {
     http.cors(c -> c.configurationSource(corsConfigurationSource))
-        .csrf(csrf -> csrf.disable())
-        .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authenticationProvider(authenticationProvider)
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/api/auth/**")
-                    .permitAll()
-                    // ✅ AJOUTER LES ENDPOINTS DE GESTION LIVRAISON
-                    .requestMatchers("/api/delivery-orders/**").permitAll()
-                    .requestMatchers("/api/shipments/**").permitAll()
-                    .requestMatchers("/api/dashboard/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/listings/create")
-                    .hasAnyRole("ENTERPRISE", "ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/api/transport-offers")
-                    .hasAnyRole("TRANSPORTER", "ADMIN")
-                    .requestMatchers("/api/admin/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/users/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/platform-events/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/solidarity-associations/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/enterprises/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/transporters/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/listings/**")
-                    .authenticated()
-                    .anyRequest()
-                    .authenticated())
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authenticationProvider)
+            .authorizeHttpRequests(
+                    auth ->
+                            auth
+                                    // ✅ Authentification - public
+                                    .requestMatchers("/api/auth/**").permitAll()
+
+                                    // ✅ Livraisons - public (AJOUTÉ)
+                                    .requestMatchers("/api/delivery-orders/**").permitAll()
+                                    .requestMatchers("/api/shipments/**").permitAll()
+                                    .requestMatchers("/api/dashboard/**").permitAll()
+
+                                    // ✅ Transporteurs - public (AJOUTÉ - RÉSOLUTON ERREUR 403)
+                                    .requestMatchers("/api/transporters").permitAll()
+                                    .requestMatchers("/api/transporters/**").permitAll()
+
+                                    // ✅ Notifications - public (AJOUTÉ - RÉSOLUTION ERREUR 403)
+                                    .requestMatchers("/api/notifications/**").permitAll()
+
+                                    // ✅ WebSocket - public (AJOUTÉ)
+                                    .requestMatchers("/ws/**", "/ws/info/**").permitAll()
+
+                                    // ✅ Listings - avec rôles
+                                    .requestMatchers(HttpMethod.POST, "/api/listings/create")
+                                    .hasAnyRole("ENTERPRISE", "ADMIN")
+                                    .requestMatchers("/api/listings/**").authenticated()
+
+                                    // ✅ Offres transport - avec rôles
+                                    .requestMatchers(HttpMethod.POST, "/api/transport-offers")
+                                    .hasAnyRole("TRANSPORTER", "ADMIN")
+
+                                    // ✅ Admin - restreint
+                                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                    .requestMatchers("/api/users/**").hasRole("ADMIN")
+                                    .requestMatchers("/api/platform-events/**").hasRole("ADMIN")
+                                    .requestMatchers("/api/solidarity-associations/**").hasRole("ADMIN")
+                                    .requestMatchers("/api/enterprises/**").hasRole("ADMIN")
+
+                                    // ✅ Le reste nécessite authentification
+                                    .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 }
