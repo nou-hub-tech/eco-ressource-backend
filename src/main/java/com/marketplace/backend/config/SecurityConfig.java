@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/stock-movement/**").permitAll()
                         .requestMatchers("/product/**").permitAll()
                         .requestMatchers("/ai/**").permitAll()
+                        .requestMatchers("/error").permitAll()
 
                         // Protected POST routes
                         .requestMatchers(HttpMethod.POST, "/api/listings/create")
@@ -85,7 +86,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/platform-events/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/solidarity-associations/**").hasAuthority("ADMIN")
-                        .requestMatchers("/api/transporters/**").hasAuthority("ADMIN")
+                        // Transporters: GET open to any authenticated user, writes = ADMIN only
+                        .requestMatchers(HttpMethod.GET, "/api/transporters", "/api/transporters/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/transporters/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/transporters/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/transporters/**").hasAuthority("ADMIN")
+
+                        .requestMatchers("/api/notifications/**").permitAll()
+
 
                         // Authenticated routes
                         .requestMatchers("/api/listings/**").authenticated()
@@ -96,6 +104,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/delivery-orders/**").permitAll()
                         .requestMatchers("/api/shipments/**").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
+                        .requestMatchers("/api/notifications/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/listings/create")
                         .hasAnyRole("ENTERPRISE", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/transport-offers")
@@ -107,8 +116,7 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .requestMatchers("/api/enterprises/**")
                         .hasRole("ADMIN")
-                        .requestMatchers("/api/transporters/**")
-                        .hasRole("ADMIN")
+
                         .requestMatchers("/api/listings/**")
                         .authenticated()
 
