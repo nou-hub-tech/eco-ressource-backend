@@ -58,8 +58,14 @@ public class FavoriteService {
             .findByUserIdAndListingId(userId, listingId)
             .orElseThrow(() -> new IllegalArgumentException("Favorite not found"));
     ResourceListing listing = favorite.getListing();
+    FavoriteResponse response = toResponse(favorite);
     favoriteRepository.delete(favorite);
-    realtimeNotificationService.favoriteChanged(listingId, toResponse(favorite));
+    realtimeNotificationService.favoriteChanged(listingId, response);
+    notifyListingOwner(
+        listing,
+        "FAVORITE_REMOVED",
+        favorite.getUser().getFullName() + " a retire votre annonce de ses favoris",
+        response);
   }
 
   @Transactional(readOnly = true)

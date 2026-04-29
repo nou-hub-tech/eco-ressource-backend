@@ -42,8 +42,16 @@ public class CommentController {
 
   @GetMapping("/api/resource-listings/{listingId}/comments")
   @Operation(summary = "Lister les commentaires d'une annonce (arbre threade)")
-  public ResponseEntity<List<CommentResponse>> list(@PathVariable Long listingId) {
-    return ResponseEntity.ok(commentService.findByListing(listingId));
+  public ResponseEntity<List<CommentResponse>> list(
+      @PathVariable Long listingId, Authentication auth) {
+    User user = null;
+    if (auth != null
+        && auth.isAuthenticated()
+        && auth.getName() != null
+        && !"anonymousUser".equals(auth.getName())) {
+      user = securityUserHelper.requireUser(auth);
+    }
+    return ResponseEntity.ok(commentService.findByListing(listingId, user));
   }
 
   @PutMapping("/api/comments/{commentId}")

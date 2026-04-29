@@ -83,6 +83,7 @@ public class CommentService {
     Comment comment =
         Comment.builder()
             .content(moderation.getDisplayContent())
+            .originalContent(req.getContent())
             .moderationStatus(moderation.getStatus())
             .toxicityScore(moderation.getToxicityScore())
             .moderationReason(moderation.getReason())
@@ -92,7 +93,7 @@ public class CommentService {
             .build();
     comment = commentRepository.save(comment);
 
-    CommentResponse response = toResponse(comment);
+    CommentResponse response = toResponse(comment, user);
     realtimeNotificationService.commentChanged("COMMENT_CREATED", listingId, response);
     notifyListingOwner(listing, user, response);
     notifyModerationIfNeeded(user, response);
@@ -100,7 +101,7 @@ public class CommentService {
   }
 
   @Transactional(readOnly = true)
-  public List<CommentResponse> findByListing(Long listingId) {
+  public List<CommentResponse> findByListing(Long listingId, User actor) {
     listingRepository
         .findById(listingId)
         .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
@@ -108,7 +109,9 @@ public class CommentService {
     List<Comment> rootComments =
         commentRepository.findByListing_IdAndParentIsNullOrderByCreatedAtAsc(listingId);
 
-    return rootComments.stream().map(this::toResponseWithReplies).collect(Collectors.toList());
+    return rootComments.stream()
+        .map(comment -> toResponseWithReplies(comment, actor))
+        .collect(Collectors.toList());
   }
 
   @Transactional
@@ -120,6 +123,10 @@ public class CommentService {
 
     if (!comment.getUser().getId().equals(userId)) {
       throw new IllegalArgumentException("Only the comment owner can edit");
+    }
+    if (comment.getModerationStatus() == CommentModerationStatus.BLOCKED) {
+      throw new IllegalArgumentException(
+          "Ce commentaire est bloque pour toxicite elevee et ne peut plus etre modifie.");
     }
 
     if (newContent == null || newContent.isBlank()) {
@@ -135,11 +142,12 @@ public class CommentService {
     }
 
     comment.setContent(moderation.getDisplayContent());
+    comment.setOriginalContent(newContent);
     comment.setModerationStatus(moderation.getStatus());
     comment.setToxicityScore(moderation.getToxicityScore());
     comment.setModerationReason(moderation.getReason());
     comment = commentRepository.save(comment);
-    CommentResponse response = toResponse(comment);
+    CommentResponse response = toResponse(comment, comment.getUser());
     realtimeNotificationService.commentChanged("COMMENT_UPDATED", comment.getListing().getId(), response);
     notifyModerationIfNeeded(comment.getUser(), response);
     return response;
@@ -161,7 +169,7 @@ public class CommentService {
     }
 
     Long listingId = comment.getListing().getId();
-    CommentResponse response = toResponse(comment);
+    CommentResponse response = toResponse(comment, actor);
     deleteCommentAndDescendants(comment.getId());
     realtimeNotificationService.commentChanged("COMMENT_DELETED", listingId, response);
   }
@@ -186,46 +194,70 @@ public class CommentService {
   }
 
   private CommentResponse toResponse(Comment comment) {
+    return toResponse(comment, null);
+  }
+
+  private CommentResponse toResponse(Comment comment, User actor) {
+    CommentModerationStatus status =
+        comment.getModerationStatus() == null
+            ? CommentModerationStatus.VISIBLE
+            : comment.getModerationStatus();
     return CommentResponse.builder()
         .id(comment.getId())
         .content(comment.getContent())
+        .originalContent(resolveOriginalContent(comment, actor, status))
         .userId(comment.getUser().getId())
         .userFullName(comment.getUser().getFullName())
         .listingId(comment.getListing().getId())
         .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
         .createdAt(comment.getCreatedAt())
-        .moderationStatus(
-            comment.getModerationStatus() == null
-                ? CommentModerationStatus.VISIBLE
-                : comment.getModerationStatus())
+        .moderationStatus(status)
         .toxicityScore(comment.getToxicityScore() == null ? 0.0 : comment.getToxicityScore())
         .moderationReason(comment.getModerationReason())
         .replies(List.of())
         .build();
   }
 
-  private CommentResponse toResponseWithReplies(Comment comment) {
+  private CommentResponse toResponseWithReplies(Comment comment, User actor) {
     List<CommentResponse> replies =
         comment.getReplies().stream()
-            .map(this::toResponseWithReplies)
+            .map(reply -> toResponseWithReplies(reply, actor))
             .collect(Collectors.toList());
+    CommentModerationStatus status =
+        comment.getModerationStatus() == null
+            ? CommentModerationStatus.VISIBLE
+            : comment.getModerationStatus();
 
     return CommentResponse.builder()
         .id(comment.getId())
         .content(comment.getContent())
+        .originalContent(resolveOriginalContent(comment, actor, status))
         .userId(comment.getUser().getId())
         .userFullName(comment.getUser().getFullName())
         .listingId(comment.getListing().getId())
         .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
         .createdAt(comment.getCreatedAt())
-        .moderationStatus(
-            comment.getModerationStatus() == null
-                ? CommentModerationStatus.VISIBLE
-                : comment.getModerationStatus())
+        .moderationStatus(status)
         .toxicityScore(comment.getToxicityScore() == null ? 0.0 : comment.getToxicityScore())
         .moderationReason(comment.getModerationReason())
         .replies(replies)
         .build();
+  }
+
+  private String resolveOriginalContent(
+      Comment comment, User actor, CommentModerationStatus status) {
+    if (status != CommentModerationStatus.MASKED || actor == null) {
+      return null;
+    }
+    boolean canView =
+        comment.getUser().getId().equals(actor.getId())
+            || actor.getRole() == com.marketplace.backend.entity.enums.Role.ROLE_ADMIN;
+    if (!canView) {
+      return null;
+    }
+    return comment.getOriginalContent() != null
+        ? comment.getOriginalContent()
+        : comment.getContent();
   }
 
   private void notifyListingOwner(ResourceListing listing, User author, CommentResponse payload) {
@@ -257,9 +289,9 @@ public class CommentService {
 
     String subject = "Moderation commentaire Eco-Ressource";
     String authorMessage =
-        "Votre commentaire sur une annonce a ete "
-            + label
-            + ". Connectez-vous pour le modifier ou le supprimer si necessaire.";
+        payload.getModerationStatus() == CommentModerationStatus.MASKED
+            ? "Votre commentaire sur une annonce a ete masque. Connectez-vous pour le modifier ou le supprimer si necessaire."
+            : "Votre commentaire sur une annonce a ete modere automatiquement pour toxicite elevee. Il ne peut plus etre modifie, mais vous pouvez le supprimer depuis l'annonce.";
     String adminMessage =
         "Un commentaire a ete "
             + label

@@ -42,6 +42,9 @@ public class Comment {
   @Column(nullable = false, length = 2000)
   private String content;
 
+  @Column(length = 2000)
+  private String originalContent;
+
   @Enumerated(EnumType.STRING)
   @Column
   private CommentModerationStatus moderationStatus;

@@ -23,6 +23,7 @@ import com.marketplace.backend.repository.PostAttachmentRepository;
 import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.ResourceListingRepository;
 import com.marketplace.backend.repository.TransporterRepository;
+import com.marketplace.backend.repository.UserRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
@@ -45,6 +46,7 @@ public class ResourceListingService {
   private final CommentRepository commentRepository;
   private final EnterpriseRepository enterpriseRepository;
   private final TransporterRepository transporterRepository;
+  private final UserRepository userRepository;
   private final RealtimeNotificationService realtimeNotificationService;
 
   @Transactional
@@ -348,8 +350,30 @@ public class ResourceListingService {
     }
 
     ListingResponse response = toResponse(listing);
+    deleteListingComments(id);
     listingRepository.delete(listing);
     realtimeNotificationService.listingChanged("LISTING_DELETED", id, response);
+  }
+
+  private void deleteListingComments(Long listingId) {
+    List<Long> commentIds =
+        commentRepository.findByListing_IdAndParentIsNullOrderByCreatedAtAsc(listingId).stream()
+            .map(comment -> comment.getId())
+            .toList();
+    for (Long commentId : commentIds) {
+      deleteCommentAndDescendants(commentId);
+    }
+  }
+
+  private void deleteCommentAndDescendants(Long commentId) {
+    List<Long> childIds =
+        commentRepository.findByParent_Id(commentId).stream()
+            .map(comment -> comment.getId())
+            .toList();
+    for (Long childId : childIds) {
+      deleteCommentAndDescendants(childId);
+    }
+    commentRepository.deleteById(commentId);
   }
 
   private ListingResponse toResponse(ResourceListing listing) {
@@ -397,6 +421,7 @@ public class ResourceListingService {
         .productCategory(listing.getProduct().getCategory())
         .companyId(listing.getCompanyId())
         .companyName(resolveCompanyName(listing.getCompanyId()))
+        .ownerFullName(resolveOwnerFullName(listing.getCompanyId()))
         .createdAt(listing.getCreatedAt())
         .attachmentUrls(attachmentUrls)
         .groupPurchase(gpResponse)
@@ -480,6 +505,23 @@ public class ResourceListingService {
                     .findById(companyId)
                     .map(t -> t.getCompanyName())
                 .orElse(null));
+  }
+
+  private String resolveOwnerFullName(Long companyId) {
+    if (companyId == null) {
+      return null;
+    }
+    return userRepository.findAllWithProfiles().stream()
+        .filter(
+            user ->
+                (user.getEnterprise() != null
+                        && companyId.equals(user.getEnterprise().getId()))
+                    || (user.getTransporter() != null
+                        && companyId.equals(user.getTransporter().getId())))
+        .map(User::getFullName)
+        .filter(name -> name != null && !name.isBlank())
+        .findFirst()
+        .orElse(null);
   }
 
   private Long resolveActorCompanyId(User user) {

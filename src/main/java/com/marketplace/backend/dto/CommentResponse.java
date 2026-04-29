@@ -12,6 +12,7 @@ public class CommentResponse {
 
   private Long id;
   private String content;
+  private String originalContent;
   private Long userId;
   private String userFullName;
   private Long listingId;
