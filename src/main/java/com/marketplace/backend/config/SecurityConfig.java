@@ -26,6 +26,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
@@ -91,6 +92,27 @@ public class SecurityConfig {
                         .requestMatchers("/api/transport/**").authenticated()
                         .requestMatchers("/api/enterprise/**").authenticated()
 
+
+                        .requestMatchers("/api/delivery-orders/**").permitAll()
+                        .requestMatchers("/api/shipments/**").permitAll()
+                        .requestMatchers("/api/dashboard/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/listings/create")
+                        .hasAnyRole("ENTERPRISE", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/transport-offers")
+                        .hasAnyRole("TRANSPORTER", "ADMIN")
+
+                        .requestMatchers("/api/platform-events/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers("/api/solidarity-associations/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers("/api/enterprises/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers("/api/transporters/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers("/api/listings/**")
+                        .authenticated()
+
+
                         // All others
                         .anyRequest().authenticated())
 
@@ -98,4 +120,5 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 }

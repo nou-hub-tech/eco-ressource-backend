@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 .vscode/settings.json
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -32,8 +32,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
 .DS_Store
-=======
+
 target/ 
 uploads/ 
 application.properties 
@@ -43,3 +44,4 @@ application.properties
 .DS_Store 
 Thumbs.db 
 >>>>>>> origin/gestion_product_backend_v2
+

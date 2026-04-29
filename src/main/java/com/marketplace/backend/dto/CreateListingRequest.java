@@ -12,7 +12,6 @@ public class CreateListingRequest {
   /** When set (e.g. by admin), listing is created for this enterprise; otherwise the caller's enterprise is used. */
   private Long enterpriseId;
 
-
   @NotBlank private String title;
 
   @NotBlank private String category;

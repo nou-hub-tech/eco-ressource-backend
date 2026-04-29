@@ -26,7 +26,9 @@ public class TransporterController {
   private final TransporterService transporterService;
 
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN')")
+
+  @PreAuthorize("permitAll()")  // ← CHANGEMENT: permet à tous les rôles d'accéder
+
   public ResponseEntity<List<Transporter>> list() {
     return ResponseEntity.ok(transporterService.findAll());
   }

@@ -28,6 +28,7 @@ public class AuthService {
   private final AuthenticationManager authenticationManager;
   private final JwtUtils jwtUtils;
 
+
   private final UserMapper userMapper;
 
 
@@ -45,6 +46,7 @@ public class AuthService {
 
 
     UserResponseDto dto = userMapper.toUserResponse(user);
+
 
     return JwtResponse.builder()
         .token(token)
@@ -113,6 +115,7 @@ public class AuthService {
         .user(UserResponseDto.from(reloaded))
 
         .user(userMapper.toUserResponse(reloaded))
+
 
         .build();
   }

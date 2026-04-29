@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
 import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.StockItem;
@@ -69,6 +70,7 @@ public class EnterpriseController {
 
   @GetMapping
   @PreAuthorize("hasAnyRole('ADMIN', 'ENTERPRISE')")
+
   public ResponseEntity<List<Enterprise>> list() {
     return ResponseEntity.ok(enterpriseService.findAll());
   }
@@ -114,6 +116,7 @@ public class EnterpriseController {
       return ResponseEntity.notFound().build();
     }
   }
+
 
 
     // ════════════════════════════════════════
@@ -460,5 +463,6 @@ public class EnterpriseController {
 
         return ResponseEntity.ok(result);
     }
+
 
 }

@@ -2,6 +2,7 @@ package com.marketplace.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
@@ -47,6 +48,7 @@ public class Enterprise {
 
 
 
+
   private User user;
 
   @Column(nullable = false)
@@ -76,7 +78,6 @@ public class Enterprise {
   @Builder.Default
   @JsonIgnore
   private List<StockItem> stockItems = new ArrayList<>();
-
 
 
   @PrePersist

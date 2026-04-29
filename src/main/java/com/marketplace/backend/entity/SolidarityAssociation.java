@@ -1,6 +1,5 @@
 package com.marketplace.backend.entity;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;

@@ -2,7 +2,9 @@ package com.marketplace.backend.repository;
 
 import com.marketplace.backend.entity.User;
 import com.marketplace.backend.entity.enums.Role;
+
 import java.util.List;
+
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,5 +39,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
       "SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.enterprise LEFT JOIN FETCH u.transporter"
           + " WHERE u.role = :role")
   List<User> findByRoleWithProfiles(@Param("role") Role role);
+
 
 }

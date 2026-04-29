@@ -1,8 +1,10 @@
 package com.marketplace.backend.entity;
 
 
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 
 import com.marketplace.backend.entity.enums.Role;
 import com.marketplace.backend.entity.enums.UserAccountStatus;
@@ -28,7 +30,6 @@ import lombok.Setter;
 @Table(name = "users")
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,7 +46,9 @@ public class User {
 
   @Column(nullable = false)
 
+
   @JsonIgnore
+
 
   private String password;
 
@@ -78,8 +81,6 @@ public class User {
 
   @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   @JsonIgnore
-
-
 
   private Transporter transporter;
 

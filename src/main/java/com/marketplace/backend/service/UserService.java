@@ -1,6 +1,7 @@
 package com.marketplace.backend.service;
 
 import com.marketplace.backend.dto.AdminUserDto;
+
 import com.marketplace.backend.dto.EventDto;
 import com.marketplace.backend.dto.ReservationDto;
 import com.marketplace.backend.dto.SolidarityDto;
@@ -26,6 +27,17 @@ import com.marketplace.backend.repository.WalletTransactionRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.marketplace.backend.dto.UserCreateRequest;
+import com.marketplace.backend.dto.UserStatusRequest;
+import com.marketplace.backend.dto.UserUpdateRequest;
+import com.marketplace.backend.entity.Enterprise;
+import com.marketplace.backend.entity.Transporter;
+import com.marketplace.backend.entity.User;
+import com.marketplace.backend.entity.enums.Role;
+import com.marketplace.backend.entity.enums.UserAccountStatus;
+import com.marketplace.backend.repository.UserRepository;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -37,6 +49,7 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+
   private final UserMapper userMapper;
 
   private final PlatformEventRepository platformEventRepository;
@@ -54,31 +67,38 @@ public class UserService {
 
   @Transactional(readOnly = true)
   public List<AdminUserDto> listNonAdminUsers() {
+
     return userRepository.findAllWithProfiles()
             .stream()
             .filter(u -> u.getRole() != Role.ROLE_ADMIN)
             .map(userMapper::toAdminUserDto)
             .collect(Collectors.toList());
+
   }
 
   @Transactional(readOnly = true)
   public long countNonAdminUsers() {
+
     return userRepository.findAll()
             .stream()
             .filter(u -> u.getRole() != Role.ROLE_ADMIN)
             .count();
+
   }
 
   @Transactional(readOnly = true)
   public AdminUserDto getForAdmin(Long id) {
+
     User user = userRepository.findByIdWithProfiles(id)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
     return userMapper.toAdminUserDto(user);
+
   }
 
   @Transactional
   public AdminUserDto create(UserCreateRequest req) {
+
 
     if (userRepository.existsByEmail(req.getEmail())) {
       throw new IllegalArgumentException("Email already registered");
@@ -89,6 +109,7 @@ public class UserService {
             : Role.ROLE_ENTERPRISE;
 
     User user = User.builder()
+
             .email(req.getEmail())
             .password(passwordEncoder.encode(req.getPassword()))
             .fullName(req.getName())
@@ -99,8 +120,10 @@ public class UserService {
             .verified(false)
             .build();
 
+
     if (role == Role.ROLE_ENTERPRISE) {
       Enterprise enterprise = Enterprise.builder()
+
               .user(user)
               .companyName(req.getCompanyName())
               .sector(req.getSector())
@@ -109,11 +132,13 @@ public class UserService {
               .ordersCount(0)
               .revenue("0")
               .build();
+
 
       user.setEnterprise(enterprise);
 
     } else {
       Transporter transporter = Transporter.builder()
+
               .user(user)
               .companyName(req.getCompanyName())
               .sector(req.getSector())
@@ -122,6 +147,7 @@ public class UserService {
               .ordersCount(0)
               .revenue("0")
               .build();
+
 
       user.setTransporter(transporter);
     }
@@ -132,10 +158,12 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
     return userMapper.toAdminUserDto(fresh);
+
   }
 
   @Transactional
   public AdminUserDto update(Long userId, UserUpdateRequest req) {
+
 
     User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -181,10 +209,12 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
     return userMapper.toAdminUserDto(fresh);
+
   }
 
   @Transactional
   public AdminUserDto updateStatus(Long userId, UserStatusRequest req) {
+
 
     User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));

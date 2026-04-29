@@ -4,6 +4,7 @@ package com.marketplace.backend.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 
+
 import com.marketplace.backend.entity.enums.ReservationStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

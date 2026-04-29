@@ -1,6 +1,7 @@
 package com.marketplace.backend.controller;
 
 import com.marketplace.backend.dto.CreateListingRequest;
+
 import com.marketplace.backend.dto.ExchangeRequestDto;
 import com.marketplace.backend.dto.ListingDto;
 import com.marketplace.backend.dto.ListingModerationRequest;
@@ -10,12 +11,30 @@ import com.marketplace.backend.service.ListingService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+
+import com.marketplace.backend.dto.ListingDto;
+import com.marketplace.backend.dto.ListingModerationRequest;
+import com.marketplace.backend.service.ListingService;
+import jakarta.validation.Valid;
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 
 @RestController
 @RequestMapping("/api/listings")
@@ -24,14 +43,15 @@ public class ListingController {
 
   private final ListingService listingService;
 
-  // GET ALL (avec auth filtrage publié)
+
   @GetMapping
   @PreAuthorize("isAuthenticated()")
   public ResponseEntity<List<ListingDto>> all(Authentication auth) {
     return ResponseEntity.ok(listingService.findAllPublished(auth));
   }
 
-  // GET BY ID
+
+
   @GetMapping("/{id}")
   @PreAuthorize("isAuthenticated()")
   public ResponseEntity<ListingDto> get(@PathVariable Long id) {
@@ -42,7 +62,7 @@ public class ListingController {
     }
   }
 
-  // MES LISTINGS
+
   @GetMapping("/my")
   @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
   public ResponseEntity<List<ListingDto>> my(Authentication auth) {
@@ -53,6 +73,7 @@ public class ListingController {
     }
   }
 
+
   // CREATE
   @PostMapping("/create")
   @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
@@ -62,10 +83,12 @@ public class ListingController {
     try {
       return ResponseEntity.status(HttpStatus.CREATED)
               .body(listingService.create(auth, req));
+
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
     }
   }
+
 
   // UPDATE (version propre merged -> updateMine)
   @PutMapping("/{id}")
@@ -76,22 +99,25 @@ public class ListingController {
           @Valid @RequestBody CreateListingRequest req) {
     try {
       return ResponseEntity.ok(listingService.updateMine(id, auth, req));
+
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
     }
   }
 
-  // DELETE (version mine)
+
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
   public ResponseEntity<Void> delete(@PathVariable Long id, Authentication auth) {
     try {
       listingService.deleteMine(id, auth);
+
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
     }
   }
+
 
   // MODERATION ADMIN
   @PatchMapping("/{id}/moderate")
@@ -99,12 +125,14 @@ public class ListingController {
   public ResponseEntity<ListingDto> moderate(
           @PathVariable Long id,
           @Valid @RequestBody ListingModerationRequest req) {
+
     try {
       return ResponseEntity.ok(listingService.moderate(id, req));
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
     }
   }
+
 
   // ===================== EXTRA FEATURES (branche v2) =====================
 
@@ -155,3 +183,4 @@ public class ListingController {
     return ResponseEntity.ok(listingService.myWalletTransactions(auth));
   }
 }
+
