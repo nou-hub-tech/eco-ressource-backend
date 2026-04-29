@@ -36,6 +36,7 @@ import com.marketplace.backend.repository.UserRepository;
 import com.marketplace.backend.repository.WalletTransactionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -64,61 +65,57 @@ public class DatabaseSeed {
   CommandLineRunner seedAdminAndDemo() {
     return args -> {
       if (userRepository.findByEmail("admin@marketplace.com").isEmpty()) {
-        User admin =
-            User.builder()
-                .email("admin@marketplace.com")
-                .password(passwordEncoder.encode("admin123"))
-                .fullName("Admin Principal")
-                .role(Role.ROLE_ADMIN)
-                .enabled(true)
-                .accountStatus(UserAccountStatus.active)
-                .verified(true)
-                .phone("")
-                .city("Tunis")
-                .build();
+        User admin = User.builder()
+            .email("admin@marketplace.com")
+            .password(passwordEncoder.encode("admin123"))
+            .fullName("Admin Principal")
+            .role(Role.ROLE_ADMIN)
+            .enabled(true)
+            .accountStatus(UserAccountStatus.active)
+            .verified(true)
+            .phone("")
+            .city("Tunis")
+            .build();
         userRepository.save(admin);
       }
 
       if (userRepository.findByEmail("slim@entreprise.tn").isEmpty()) {
-        User entUser =
-            User.builder()
-                .email("slim@entreprise.tn")
-                .password(passwordEncoder.encode("demo123"))
-                .fullName("Slim Ben Ali")
-                .role(Role.ROLE_ENTERPRISE)
-                .enabled(true)
-                .accountStatus(UserAccountStatus.active)
-                .verified(true)
-                .phone("+216 71 234 567")
-                .city("Tunis")
-                .build();
-        Enterprise ent =
-            Enterprise.builder()
-                .user(entUser)
-                .companyName("Industrie Slim SARL")
-                .sector("Metallurgy")
-                .taxId("TN123")
-                .listingsCount(0)
-                .ordersCount(12)
-                .revenue("14200")
-                .build();
+        User entUser = User.builder()
+            .email("slim@entreprise.tn")
+            .password(passwordEncoder.encode("demo123"))
+            .fullName("Slim Ben Ali")
+            .role(Role.ROLE_ENTERPRISE)
+            .enabled(true)
+            .accountStatus(UserAccountStatus.active)
+            .verified(true)
+            .phone("+216 71 234 567")
+            .city("Tunis")
+            .build();
+        Enterprise ent = Enterprise.builder()
+            .user(entUser)
+            .companyName("Industrie Slim SARL")
+            .sector("Metallurgy")
+            .taxId("TN123")
+            .listingsCount(0)
+            .ordersCount(12)
+            .revenue("14200")
+            .build();
         entUser.setEnterprise(ent);
         userRepository.save(entUser);
 
         Enterprise e = enterpriseRepository.findByUserId(entUser.getId()).orElseThrow();
-        Listing l1 =
-            Listing.builder()
-                .enterprise(e)
-                .title("Aluminum Scrap 2T")
-                .category("Metal")
-                .price(new BigDecimal("1200"))
-                .quantityLabel("2,000 kg")
-                .status(ListingStatus.active)
-                .aiInsight("High demand — act fast")
-                .views(48)
-                .enquiries(5)
-                .postedLabel("Mar 1")
-                .build();
+        Listing l1 = Listing.builder()
+            .enterprise(e)
+            .title("Aluminum Scrap 2T")
+            .category("Metal")
+            .price(new BigDecimal("1200"))
+            .quantityLabel("2,000 kg")
+            .status(ListingStatus.active)
+            .aiInsight("High demand — act fast")
+            .views(48)
+            .enquiries(5)
+            .postedLabel("Mar 1")
+            .build();
         listingRepository.save(l1);
         e.setListingsCount(1);
         enterpriseRepository.save(e);
@@ -161,28 +158,26 @@ public class DatabaseSeed {
       }
 
       if (userRepository.findByEmail("karim@transport.tn").isEmpty()) {
-        User trUser =
-            User.builder()
-                .email("karim@transport.tn")
-                .password(passwordEncoder.encode("demo123"))
-                .fullName("Karim Transport")
-                .role(Role.ROLE_TRANSPORTER)
-                .enabled(true)
-                .accountStatus(UserAccountStatus.active)
-                .verified(true)
-                .phone("+216 72 345 678")
-                .city("Sfax")
-                .build();
-        Transporter tr =
-            Transporter.builder()
-                .user(trUser)
-                .companyName("Karim Logistics")
-                .sector("Transport & Logistics")
-                .taxId("TN456")
-                .listingsCount(0)
-                .ordersCount(34)
-                .revenue("8750")
-                .build();
+        User trUser = User.builder()
+            .email("karim@transport.tn")
+            .password(passwordEncoder.encode("demo123"))
+            .fullName("Karim Transport")
+            .role(Role.ROLE_TRANSPORTER)
+            .enabled(true)
+            .accountStatus(UserAccountStatus.active)
+            .verified(true)
+            .phone("+216 72 345 678")
+            .city("Sfax")
+            .build();
+        Transporter tr = Transporter.builder()
+            .user(trUser)
+            .companyName("Karim Logistics")
+            .sector("Transport & Logistics")
+            .taxId("TN456")
+            .listingsCount(0)
+            .ordersCount(34)
+            .revenue("8750")
+            .build();
         trUser.setTransporter(tr);
         userRepository.save(trUser);
 
@@ -199,8 +194,7 @@ public class DatabaseSeed {
                 .build());
       }
 
-      Enterprise entForEx =
-          enterpriseRepository.findAll().stream().findFirst().orElse(null);
+      Enterprise entForEx = enterpriseRepository.findAll().stream().findFirst().orElse(null);
       if (entForEx != null && exchangeRequestRepository.count() == 0) {
         exchangeRequestRepository.save(
             ExchangeRequest.builder()
@@ -233,23 +227,62 @@ public class DatabaseSeed {
       }
 
       if (solidarityAssociationRepository.count() == 0) {
-        solidarityAssociationRepository.save(
+        User admin = userRepository.findByEmail("admin@marketplace.com").orElse(null);
+        Long adminId = admin != null ? admin.getId() : null;
+
+        solidarityAssociationRepository.saveAll(List.of(
             SolidarityAssociation.builder()
-                .name("Recycly Tunisia")
-                .mission("Household waste sorting & recycling awareness")
-                .members(120)
-                .donations(4500d)
+                .name("Tunis Eco-Challenge")
+                .mission("Organizing massive beach cleanups and waste sorting across the coastal areas of Tunis.")
+                .members(1250)
+                .donations(4500.0)
+                .goalAmount(10000.0)
                 .statusLabel("active")
-                .aiInsight("High donation success rate")
-                .build());
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Green Horizon Sfax")
+                .mission("Combatting desertification and industrial pollution through urban reforestation projects.")
+                .members(840)
+                .donations(2100.0)
+                .goalAmount(15000.0)
+                .statusLabel("active")
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Sousse Circular Hub")
+                .mission("Transforming textile waste from the Sahel region into high-quality recycled accessories.")
+                .members(420)
+                .donations(1250.0)
+                .goalAmount(5000.0)
+                .statusLabel("active")
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Bizerte Marine Life")
+                .mission("Monitoring and protecting the biodiversity of the Bizerte lagoon and nearby marine parks.")
+                .members(600)
+                .donations(3800.0)
+                .goalAmount(8000.0)
+                .statusLabel("active")
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Djerba Sun Source")
+                .mission("Assisting local hospitality businesses in transitioning to 100% renewable energy.")
+                .members(310)
+                .donations(8900.0)
+                .goalAmount(25000.0)
+                .statusLabel("pending")
+                .userId(adminId)
+                .build()));
       }
 
       if (walletTransactionRepository.count() <= 1 && userRepository.count() > 1) {
-        User any =
-            userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.ROLE_ENTERPRISE)
-                .findFirst()
-                .orElse(null);
+        User any = userRepository.findAll().stream()
+            .filter(u -> u.getRole() == Role.ROLE_ENTERPRISE)
+            .findFirst()
+            .orElse(null);
         if (any != null) {
           walletTransactionRepository.save(
               WalletTransaction.builder()

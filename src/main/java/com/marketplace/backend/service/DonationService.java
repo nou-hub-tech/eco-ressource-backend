@@ -21,6 +21,7 @@ public class DonationService {
   private final DonationRepository donationRepository;
   private final SolidarityAssociationRepository associationRepository;
   private final UserRepository userRepository;
+  private final AiService aiService;
 
   @Transactional
   public DonationResponseDto createDonation(DonationRequest request) {
@@ -49,9 +50,14 @@ public class DonationService {
     if (currentTotal == null) currentTotal = 0.0;
     association.setDonations(currentTotal + request.getAmount());
     associationRepository.save(association);
+    
+    // Refresh AI Insight asynchronously
+    aiService.updateAssociationInsightAsync(association.getId());
 
     return toDto(donation);
+
   }
+
 
   @Transactional(readOnly = true)
   public List<DonationResponseDto> getDonationsByAssociation(Long associationId) {
@@ -59,6 +65,41 @@ public class DonationService {
         .stream()
         .map(this::toDto)
         .collect(Collectors.toList());
+  }
+
+  @Transactional
+  public void delete(Long id, User currentUser) {
+    System.out.println("[DonationService] Attempting to delete donation ID: " + id);
+    System.out.println("[DonationService] Current User: " + currentUser.getEmail() + " (Role: " + currentUser.getRole() + ")");
+
+    Donation d = donationRepository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("Donation not found with ID: " + id));
+
+    // Admin can delete anything. Enterprise users can only delete their own donations.
+    boolean isAdmin = currentUser.getRole() == com.marketplace.backend.entity.enums.Role.ROLE_ADMIN;
+    boolean isOwner = d.getUser() != null && d.getUser().getId().equals(currentUser.getId());
+
+    System.out.println("[DonationService] Permission check: isAdmin=" + isAdmin + ", isOwner=" + isOwner);
+
+    if (!isAdmin && !isOwner) {
+      System.out.println("[DonationService] Access Denied for user " + currentUser.getEmail());
+      throw new org.springframework.security.access.AccessDeniedException(
+          "You do not have permission to delete this donation. Only the donor or an administrator can perform this action."
+      );
+    }
+
+    // Adjust association's total donations
+    SolidarityAssociation assoc = d.getAssociation();
+    if (assoc != null) {
+      Double newTotal = (assoc.getDonations() != null ? assoc.getDonations() : 0.0) - d.getAmount();
+      assoc.setDonations(Math.max(0, newTotal));
+      associationRepository.save(assoc);
+      
+      // Refresh AI Insight
+      aiService.updateAssociationInsightAsync(assoc.getId());
+    }
+
+    donationRepository.delete(d);
   }
 
   private DonationResponseDto toDto(Donation d) {

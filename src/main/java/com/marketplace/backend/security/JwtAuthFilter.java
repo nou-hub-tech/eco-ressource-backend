@@ -5,12 +5,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,7 +19,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
   private final JwtUtils jwtUtils;
-  private final UserDetailsServiceImpl userDetailsService;
 
   @Override
   protected void doFilterInternal(
@@ -37,15 +36,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       filterChain.doFilter(request, response);
       return;
     }
+
+    // Build authentication directly from JWT claims — no DB query needed
     String email = jwtUtils.getEmailFromToken(token);
+    String role  = jwtUtils.getRoleFromToken(token).name(); // e.g. "ROLE_ADMIN"
+
     if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      UserDetails details = userDetailsService.loadUserByUsername(email);
+      var authority = new SimpleGrantedAuthority(role);
       UsernamePasswordAuthenticationToken auth =
-          new UsernamePasswordAuthenticationToken(
-              details, null, details.getAuthorities());
-      auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+          new UsernamePasswordAuthenticationToken(email, null, List.of(authority));
       SecurityContextHolder.getContext().setAuthentication(auth);
     }
+
     filterChain.doFilter(request, response);
   }
 }
