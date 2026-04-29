@@ -5,6 +5,7 @@ import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.ExchangeRequest;
 import com.marketplace.backend.entity.Listing;
 import com.marketplace.backend.entity.PlatformEvent;
+import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.Reservation;
 import com.marketplace.backend.entity.SolidarityAssociation;
 import com.marketplace.backend.entity.StockItem;
@@ -27,6 +28,7 @@ import com.marketplace.backend.repository.EnterpriseRepository;
 import com.marketplace.backend.repository.ExchangeRequestRepository;
 import com.marketplace.backend.repository.ListingRepository;
 import com.marketplace.backend.repository.PlatformEventRepository;
+import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.ReservationRepository;
 import com.marketplace.backend.repository.SolidarityAssociationRepository;
 import com.marketplace.backend.repository.StockItemRepository;
@@ -36,6 +38,7 @@ import com.marketplace.backend.repository.UserRepository;
 import com.marketplace.backend.repository.WalletTransactionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -50,6 +53,7 @@ public class DatabaseSeed {
   private final EnterpriseRepository enterpriseRepository;
   private final TransporterRepository transporterRepository;
   private final ListingRepository listingRepository;
+  private final ProductRepository productRepository;
   private final StockItemRepository stockItemRepository;
   private final PlatformEventRepository platformEventRepository;
   private final ReservationRepository reservationRepository;
@@ -123,16 +127,30 @@ public class DatabaseSeed {
         e.setListingsCount(1);
         enterpriseRepository.save(e);
 
+        Product product =
+            productRepository.save(
+                Product.builder()
+                    .name("Aluminum Scrap")
+                    .category("Metal")
+                    .description("Industrial aluminum scrap for recycling")
+                    .materialType("Aluminum")
+                    .recyclable(true)
+                    .image("aluminum-scrap.jpg")
+                    .enterprise(e)
+                    .build());
+
         stockItemRepository.save(
             StockItem.builder()
+                .companyId(e.getId())
                 .enterprise(e)
-                .name("Aluminum Scrap")
-                .category("Metal")
+                .condition("Good")
+                .location("Tunis Warehouse")
                 .quantity(2000)
+                .status("up")
                 .unit("kg")
-                .conditionLabel("Good")
-                .status(StockItemStatus.listed)
-                .aiInsight("Shortage in 2 weeks")
+                .product(product)
+                .unitPrice(0.6)
+                .deleted(false)
                 .build());
 
         reservationRepository.save(
@@ -220,9 +238,70 @@ public class DatabaseSeed {
                 .build());
       }
 
-    
+      if (platformEventRepository.count() == 0) {
+        platformEventRepository.save(
+            PlatformEvent.builder()
+                .title("B2B Industrial Fair 2025")
+                .eventDate(LocalDate.of(2025, 4, 10))
+                .location("Tunis")
+                .participants(42)
+                .status(EventStatus.upcoming)
+                .typeLabel("Conference")
+                .build());
+      }
 
-     
+      if (solidarityAssociationRepository.count() == 0) {
+        User admin = userRepository.findByEmail("admin@marketplace.com").orElse(null);
+        Long adminId = admin != null ? admin.getId() : null;
+
+        solidarityAssociationRepository.saveAll(List.of(
+            SolidarityAssociation.builder()
+                .name("Tunis Eco-Challenge")
+                .mission("Organizing massive beach cleanups and waste sorting across the coastal areas of Tunis.")
+                .members(1250)
+                .donations(4500.0)
+                .goalAmount(10000.0)
+                .statusLabel("active")
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Green Horizon Sfax")
+                .mission("Combatting desertification and industrial pollution through urban reforestation projects.")
+                .members(840)
+                .donations(2100.0)
+                .goalAmount(15000.0)
+                .statusLabel("active")
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Sousse Circular Hub")
+                .mission("Transforming textile waste from the Sahel region into high-quality recycled accessories.")
+                .members(420)
+                .donations(1250.0)
+                .goalAmount(5000.0)
+                .statusLabel("active")
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Bizerte Marine Life")
+                .mission("Monitoring and protecting the biodiversity of the Bizerte lagoon and nearby marine parks.")
+                .members(600)
+                .donations(3800.0)
+                .goalAmount(8000.0)
+                .statusLabel("active")
+                .userId(adminId)
+                .build(),
+            SolidarityAssociation.builder()
+                .name("Djerba Sun Source")
+                .mission("Assisting local hospitality businesses in transitioning to 100% renewable energy.")
+                .members(310)
+                .donations(8900.0)
+                .goalAmount(25000.0)
+                .statusLabel("pending")
+                .userId(adminId)
+                .build()));
+      }
+
       if (walletTransactionRepository.count() <= 1 && userRepository.count() > 1) {
         User any =
             userRepository.findAll().stream()
@@ -264,3 +343,4 @@ public class DatabaseSeed {
     };
   }
 }
+

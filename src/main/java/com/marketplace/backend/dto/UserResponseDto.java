@@ -19,6 +19,8 @@ public class UserResponseDto {
   private String role;
   private String company;
   private String avatar;
+  /** Enterprise or transporter id (same as listing companyId / group participant id). */
+  private Long companyId;
 
   public static UserResponseDto from(User u) {
     String routeRole =
@@ -28,10 +30,13 @@ public class UserResponseDto {
           case ROLE_TRANSPORTER -> "transporter";
         };
     String company = null;
+    Long profileId = null;
     if (u.getEnterprise() != null) {
       company = u.getEnterprise().getCompanyName();
+      profileId = u.getEnterprise().getId();
     } else if (u.getTransporter() != null) {
       company = u.getTransporter().getCompanyName();
+      profileId = u.getTransporter().getId();
     }
     return UserResponseDto.builder()
         .id(String.valueOf(u.getId()))
@@ -40,6 +45,7 @@ public class UserResponseDto {
         .role(routeRole)
         .company(company)
         .avatar(initials(u.getFullName()))
+        .companyId(profileId)
         .build();
   }
 

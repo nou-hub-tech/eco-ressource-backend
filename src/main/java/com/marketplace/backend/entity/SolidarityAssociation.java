@@ -1,19 +1,11 @@
 package com.marketplace.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.util.List;
+import lombok.*;
 
 @Entity
 @Table(name = "solidarity_associations")
@@ -25,34 +17,48 @@ import lombok.Setter;
 @Builder
 public class SolidarityAssociation {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false)
-  private String name;
+    @Column(nullable = false)
+    private String name;
 
-  @Column(nullable = false, length = 2000)
-  private String mission;
+    @Column(nullable = false, length = 2000)
+    private String mission;
 
-  @Column(nullable = false)
-  private Integer members;
+    @Column(nullable = false)
+    private Integer members;
 
-  @Column(nullable = false)
-  private Integer donations;
+    @Column(nullable = false)
+    private Double donations;
 
-  @Column(nullable = false)
-  private String statusLabel;
+    @Column(nullable = false)
+    private String statusLabel;
 
-  private String aiInsight;
+    @Column(length = 2000)
+    private String aiInsight;
 
-  @Column(nullable = false)
-  private LocalDateTime createdAt;
+    @Column(name = "goal_amount")
+    private Double goalAmount;
 
-  @PrePersist
-  public void prePersist() {
-    if (createdAt == null) {
-      createdAt = LocalDateTime.now();
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "association", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Donation> donationsList;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (goalAmount == null) {
+            goalAmount = 0.0;
+        }
     }
-  }
 }

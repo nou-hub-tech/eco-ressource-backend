@@ -52,26 +52,46 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(
-    HttpSecurity http, 
-    AuthenticationProvider authenticationProvider,
-    CorsConfigurationSource corsConfigurationSource) throws Exception {
-      
+      HttpSecurity http,
+      AuthenticationProvider authenticationProvider,
+      CorsConfigurationSource corsConfigurationSource)
+      throws Exception {
     http.cors(c -> c.configurationSource(corsConfigurationSource))
         .csrf(csrf -> csrf.disable())
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(
             auth ->
-                auth.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/api/auth/**", "/v3/api-docs/**",
-  "/swagger-ui/**", "/swagger-ui.html")
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
-                    .requestMatchers("/error")
+                    .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/auth/me")
+                    .authenticated()
+                    .requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs")
+                    .permitAll()
+                    .requestMatchers("/ws/**")
+                    .permitAll()
+                    .requestMatchers("/files/**")
+                    .permitAll()
+                    .requestMatchers("/stockitem/**")
+                    .permitAll()
+                    .requestMatchers("/stock-movement/**")
+                    .permitAll()
+                    .requestMatchers("/product/**")
+                    .permitAll()
+                    .requestMatchers("/ai/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/listings/create")
-                    .hasAnyRole("ENTERPRISE", "ADMIN")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/transport-offers")
-                    .hasAnyRole("TRANSPORTER", "ADMIN")
+                    .hasAnyAuthority("ROLE_TRANSPORTER", "ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/listing-images")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/users/**")
@@ -79,17 +99,59 @@ public class SecurityConfig {
                     .requestMatchers("/api/platform-events/**")
                     .permitAll()
                     .requestMatchers("/api/ai/**").authenticated()
-                    .requestMatchers("/api/solidarity-associations/**")
-                    .hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/solidarity-associations/**", "/api/donations/**")
+                    .permitAll()
                     .requestMatchers("/api/enterprises/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/transporters/**")
                     .hasRole("ADMIN")
+                    // Dashboard / annonces : mêmes rôles que le JWT (ROLE_* explicite, évite les 403 SpEL)
                     .requestMatchers("/api/listings/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN", "ROLE_TRANSPORTER")
+                    .requestMatchers("/api/listing-ai/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN", "ROLE_TRANSPORTER")
+                    .requestMatchers("/api/geocoding/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN", "ROLE_TRANSPORTER")
+                    // Lecture catalogue produits sans authentification (création d’annonces, front public)
+                    .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/products", "/api/products/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/products", "/api/products/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
+                    .requestMatchers("/api/stock-items/**")
+                    .authenticated()
+                    .requestMatchers("/api/stock-movements/**")
+                    .authenticated()
+                    // Annonces « ressource » (création + favoris sur même préfixe) : GET public, écriture authentifiée
+                    .requestMatchers(HttpMethod.GET, "/api/resource-listings", "/api/resource-listings/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/resource-listings", "/api/resource-listings/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN", "ROLE_TRANSPORTER")
+                    .requestMatchers(HttpMethod.PUT, "/api/resource-listings", "/api/resource-listings/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN")
+                    .requestMatchers("/api/groups/**")
+                    .authenticated()
+                    .requestMatchers("/api/comments/**")
+                    .authenticated()
+                    .requestMatchers("/api/favorites/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN", "ROLE_TRANSPORTER")
+                    .requestMatchers("/api/deliveries/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN", "ROLE_TRANSPORTER")
+                    .requestMatchers("/api/transport/**")
+                    .hasAnyAuthority("ROLE_ENTERPRISE", "ROLE_ADMIN", "ROLE_TRANSPORTER")
+                    .requestMatchers("/api/enterprise/**")
+                    .authenticated()
+                    .requestMatchers("/inventory/**")
+                    .authenticated()
+                    .requestMatchers("/broken-product/**")
                     .authenticated()
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
+
 }

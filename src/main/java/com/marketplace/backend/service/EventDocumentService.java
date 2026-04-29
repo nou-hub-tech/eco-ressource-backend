@@ -20,7 +20,7 @@ public class EventDocumentService {
 
   private final EventDocumentRepository eventDocumentRepository;
   private final PlatformEventRepository platformEventRepository;
-  private final FileStorageService fileStorageService;
+  private final EventFileStorageService fileStorageService;
 
   @Transactional
   public EventDocumentResponse uploadDocument(Long eventId, MultipartFile file) {
