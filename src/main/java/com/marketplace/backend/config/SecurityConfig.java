@@ -94,6 +94,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/notifications/**").permitAll()
 
+                        
 
                         // Authenticated routes
                         .requestMatchers("/api/listings/**").authenticated()
