@@ -63,11 +63,6 @@ public class Enterprise {
   @JsonIgnore
   private List<Listing> listings = new ArrayList<>();
 
-  @OneToMany(mappedBy = "enterprise")
-  @Builder.Default
-  @JsonIgnore
-  private List<StockItem> stockItems = new ArrayList<>();
-
   @PrePersist
   public void prePersist() {
     if (createdAt == null) {

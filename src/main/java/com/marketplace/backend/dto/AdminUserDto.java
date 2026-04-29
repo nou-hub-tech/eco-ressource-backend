@@ -17,8 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AdminUserDto {
 
-  private static final DateTimeFormatter JOINED =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private static final DateTimeFormatter JOINED = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   private String id;
   private String name;

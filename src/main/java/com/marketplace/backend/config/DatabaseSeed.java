@@ -5,6 +5,7 @@ import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.ExchangeRequest;
 import com.marketplace.backend.entity.Listing;
 import com.marketplace.backend.entity.PlatformEvent;
+import com.marketplace.backend.entity.Product;
 import com.marketplace.backend.entity.Reservation;
 import com.marketplace.backend.entity.SolidarityAssociation;
 import com.marketplace.backend.entity.StockItem;
@@ -27,6 +28,7 @@ import com.marketplace.backend.repository.EnterpriseRepository;
 import com.marketplace.backend.repository.ExchangeRequestRepository;
 import com.marketplace.backend.repository.ListingRepository;
 import com.marketplace.backend.repository.PlatformEventRepository;
+import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.ReservationRepository;
 import com.marketplace.backend.repository.SolidarityAssociationRepository;
 import com.marketplace.backend.repository.StockItemRepository;
@@ -51,6 +53,7 @@ public class DatabaseSeed {
   private final EnterpriseRepository enterpriseRepository;
   private final TransporterRepository transporterRepository;
   private final ListingRepository listingRepository;
+  private final ProductRepository productRepository;
   private final StockItemRepository stockItemRepository;
   private final PlatformEventRepository platformEventRepository;
   private final ReservationRepository reservationRepository;
@@ -65,71 +68,89 @@ public class DatabaseSeed {
   CommandLineRunner seedAdminAndDemo() {
     return args -> {
       if (userRepository.findByEmail("admin@marketplace.com").isEmpty()) {
-        User admin = User.builder()
-            .email("admin@marketplace.com")
-            .password(passwordEncoder.encode("admin123"))
-            .fullName("Admin Principal")
-            .role(Role.ROLE_ADMIN)
-            .enabled(true)
-            .accountStatus(UserAccountStatus.active)
-            .verified(true)
-            .phone("")
-            .city("Tunis")
-            .build();
+        User admin =
+            User.builder()
+                .email("admin@marketplace.com")
+                .password(passwordEncoder.encode("admin123"))
+                .fullName("Admin Principal")
+                .role(Role.ROLE_ADMIN)
+                .enabled(true)
+                .accountStatus(UserAccountStatus.active)
+                .verified(true)
+                .phone("")
+                .city("Tunis")
+                .build();
         userRepository.save(admin);
       }
 
       if (userRepository.findByEmail("slim@entreprise.tn").isEmpty()) {
-        User entUser = User.builder()
-            .email("slim@entreprise.tn")
-            .password(passwordEncoder.encode("demo123"))
-            .fullName("Slim Ben Ali")
-            .role(Role.ROLE_ENTERPRISE)
-            .enabled(true)
-            .accountStatus(UserAccountStatus.active)
-            .verified(true)
-            .phone("+216 71 234 567")
-            .city("Tunis")
-            .build();
-        Enterprise ent = Enterprise.builder()
-            .user(entUser)
-            .companyName("Industrie Slim SARL")
-            .sector("Metallurgy")
-            .taxId("TN123")
-            .listingsCount(0)
-            .ordersCount(12)
-            .revenue("14200")
-            .build();
+        User entUser =
+            User.builder()
+                .email("slim@entreprise.tn")
+                .password(passwordEncoder.encode("demo123"))
+                .fullName("Slim Ben Ali")
+                .role(Role.ROLE_ENTERPRISE)
+                .enabled(true)
+                .accountStatus(UserAccountStatus.active)
+                .verified(true)
+                .phone("+216 71 234 567")
+                .city("Tunis")
+                .build();
+        Enterprise ent =
+            Enterprise.builder()
+                .user(entUser)
+                .companyName("Industrie Slim SARL")
+                .sector("Metallurgy")
+                .taxId("TN123")
+                .listingsCount(0)
+                .ordersCount(12)
+                .revenue("14200")
+                .build();
         entUser.setEnterprise(ent);
         userRepository.save(entUser);
 
         Enterprise e = enterpriseRepository.findByUserId(entUser.getId()).orElseThrow();
-        Listing l1 = Listing.builder()
-            .enterprise(e)
-            .title("Aluminum Scrap 2T")
-            .category("Metal")
-            .price(new BigDecimal("1200"))
-            .quantityLabel("2,000 kg")
-            .status(ListingStatus.active)
-            .aiInsight("High demand — act fast")
-            .views(48)
-            .enquiries(5)
-            .postedLabel("Mar 1")
-            .build();
+        Listing l1 =
+            Listing.builder()
+                .enterprise(e)
+                .title("Aluminum Scrap 2T")
+                .category("Metal")
+                .price(new BigDecimal("1200"))
+                .quantityLabel("2,000 kg")
+                .status(ListingStatus.active)
+                .aiInsight("High demand — act fast")
+                .views(48)
+                .enquiries(5)
+                .postedLabel("Mar 1")
+                .build();
         listingRepository.save(l1);
         e.setListingsCount(1);
         enterpriseRepository.save(e);
 
+        Product product =
+            productRepository.save(
+                Product.builder()
+                    .name("Aluminum Scrap")
+                    .category("Metal")
+                    .description("Industrial aluminum scrap for recycling")
+                    .materialType("Aluminum")
+                    .recyclable(true)
+                    .image("aluminum-scrap.jpg")
+                    .enterprise(e)
+                    .build());
+
         stockItemRepository.save(
             StockItem.builder()
+                .companyId(e.getId())
                 .enterprise(e)
-                .name("Aluminum Scrap")
-                .category("Metal")
+                .condition("Good")
+                .location("Tunis Warehouse")
                 .quantity(2000)
+                .status("up")
                 .unit("kg")
-                .conditionLabel("Good")
-                .status(StockItemStatus.listed)
-                .aiInsight("Shortage in 2 weeks")
+                .product(product)
+                .unitPrice(0.6)
+                .deleted(false)
                 .build());
 
         reservationRepository.save(
@@ -158,26 +179,28 @@ public class DatabaseSeed {
       }
 
       if (userRepository.findByEmail("karim@transport.tn").isEmpty()) {
-        User trUser = User.builder()
-            .email("karim@transport.tn")
-            .password(passwordEncoder.encode("demo123"))
-            .fullName("Karim Transport")
-            .role(Role.ROLE_TRANSPORTER)
-            .enabled(true)
-            .accountStatus(UserAccountStatus.active)
-            .verified(true)
-            .phone("+216 72 345 678")
-            .city("Sfax")
-            .build();
-        Transporter tr = Transporter.builder()
-            .user(trUser)
-            .companyName("Karim Logistics")
-            .sector("Transport & Logistics")
-            .taxId("TN456")
-            .listingsCount(0)
-            .ordersCount(34)
-            .revenue("8750")
-            .build();
+        User trUser =
+            User.builder()
+                .email("karim@transport.tn")
+                .password(passwordEncoder.encode("demo123"))
+                .fullName("Karim Transport")
+                .role(Role.ROLE_TRANSPORTER)
+                .enabled(true)
+                .accountStatus(UserAccountStatus.active)
+                .verified(true)
+                .phone("+216 72 345 678")
+                .city("Sfax")
+                .build();
+        Transporter tr =
+            Transporter.builder()
+                .user(trUser)
+                .companyName("Karim Logistics")
+                .sector("Transport & Logistics")
+                .taxId("TN456")
+                .listingsCount(0)
+                .ordersCount(34)
+                .revenue("8750")
+                .build();
         trUser.setTransporter(tr);
         userRepository.save(trUser);
 
@@ -194,7 +217,8 @@ public class DatabaseSeed {
                 .build());
       }
 
-      Enterprise entForEx = enterpriseRepository.findAll().stream().findFirst().orElse(null);
+      Enterprise entForEx =
+          enterpriseRepository.findAll().stream().findFirst().orElse(null);
       if (entForEx != null && exchangeRequestRepository.count() == 0) {
         exchangeRequestRepository.save(
             ExchangeRequest.builder()
@@ -279,10 +303,11 @@ public class DatabaseSeed {
       }
 
       if (walletTransactionRepository.count() <= 1 && userRepository.count() > 1) {
-        User any = userRepository.findAll().stream()
-            .filter(u -> u.getRole() == Role.ROLE_ENTERPRISE)
-            .findFirst()
-            .orElse(null);
+        User any =
+            userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.ROLE_ENTERPRISE)
+                .findFirst()
+                .orElse(null);
         if (any != null) {
           walletTransactionRepository.save(
               WalletTransaction.builder()
@@ -318,3 +343,4 @@ public class DatabaseSeed {
     };
   }
 }
+

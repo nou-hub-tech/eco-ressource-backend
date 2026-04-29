@@ -26,6 +26,7 @@ public class ListingDto {
   private String posted;
   /** Extra fields for enterprise dashboard */
   private String sub;
+
   private String initials;
   private String priceDisplay;
   private String match;
@@ -34,8 +35,7 @@ public class ListingDto {
   private String time;
 
   public static ListingDto from(Listing l) {
-    String company =
-        l.getEnterprise() != null ? l.getEnterprise().getCompanyName() : "";
+    String company = l.getEnterprise() != null ? l.getEnterprise().getCompanyName() : "";
     return ListingDto.builder()
         .id(l.getId())
         .title(l.getTitle())
