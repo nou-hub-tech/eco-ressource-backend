@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import com.marketplace.backend.entity.DeliveryOrder;
 import com.marketplace.backend.entity.enums.StatutCommande;
 import com.marketplace.backend.service.IDeliveryOrderService;
+import com.marketplace.backend.service.DeliveryCompletionService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,9 +17,12 @@ import java.util.Map;
 public class DeliveryOrderController {
 
     private final IDeliveryOrderService deliveryOrderService;
+    private final DeliveryCompletionService deliveryCompletionService;
 
-    public DeliveryOrderController(IDeliveryOrderService deliveryOrderService) {
+    public DeliveryOrderController(IDeliveryOrderService deliveryOrderService,
+                                   DeliveryCompletionService deliveryCompletionService) {
         this.deliveryOrderService = deliveryOrderService;
+        this.deliveryCompletionService = deliveryCompletionService;
     }
 
     // ===== CRUD EXISTANTS ==========
@@ -51,6 +55,24 @@ public class DeliveryOrderController {
     @PatchMapping("/update-statut/{id}")
     public DeliveryOrder updateStatut(@PathVariable Long id, @RequestParam StatutCommande statut) {
         return deliveryOrderService.updateStatut(id, statut);
+    }
+
+    /**
+     * POST /api/delivery-orders/{id}/release-escrow
+     * Appelé explicitement par le frontend quand le transporteur termine la livraison.
+     * Déclenche la cascade : escrow LOCKED → RELEASED + email vendeur.
+     */
+    @PostMapping("/{id}/release-escrow")
+    public ResponseEntity<?> releaseEscrow(@PathVariable Long id) {
+        DeliveryOrder order = deliveryOrderService.retrieveDeliveryOrder(id);
+        if (order == null) return ResponseEntity.notFound().build();
+        try {
+            deliveryCompletionService.onDeliveryCompleted(id, order.getNomClient());
+            return ResponseEntity.ok(java.util.Map.of("released", true, "deliveryId", id));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/statut/{statut}")

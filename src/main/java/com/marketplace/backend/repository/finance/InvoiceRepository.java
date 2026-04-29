@@ -34,4 +34,15 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      */
     @Query("SELECT COUNT(i) FROM Invoice i WHERE i.invoiceType = :type AND i.issueDate LIKE :year%")
     long countByTypeAndYear(@Param("type") InvoiceType type, @Param("year") String year);
+
+    /** 🚚 Factures UNPAID liées à une livraison (pour le polling automatique) */
+    @Query("SELECT i FROM Invoice i WHERE i.status = 'UNPAID' AND i.deliveryOrderId IS NOT NULL")
+    List<Invoice> findUnpaidWithDelivery();
+
+    /** 🎯 Factures liées à une commande de livraison spécifique */
+    List<Invoice> findByDeliveryOrderId(Long deliveryOrderId);
+
+    /** 🔍 Fallback : factures d'un client avec un statut donné */
+    @Query("SELECT i FROM Invoice i WHERE LOWER(i.clientName) = LOWER(:clientName) AND i.status = :status")
+    List<Invoice> findByClientNameAndStatus(@Param("clientName") String clientName, @Param("status") String status);
 }

@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 @EnableWebSecurity
@@ -70,6 +71,10 @@ public class SecurityConfig {
                         .requestMatchers("/product/**").permitAll()
                         .requestMatchers("/ai/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // Stripe webhook + clé publique + polling status — sans JWT
+                        .requestMatchers(HttpMethod.POST, "/api/stripe/webhook").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/stripe/public-key").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/stripe/polling-status").permitAll()
 
                         // Protected POST routes
                         .requestMatchers(HttpMethod.POST, "/api/listings/create")
@@ -94,7 +99,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/notifications/**").permitAll()
 
-                        
+
 
                         // Authenticated routes
                         .requestMatchers("/api/listings/**").authenticated()
@@ -130,4 +135,10 @@ public class SecurityConfig {
         return http.build();
     }
 
-}
+    /** Bean RestTemplate utilisé par KonnectService pour les appels HTTP sortants */
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+}

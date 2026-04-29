@@ -27,4 +27,9 @@ public class escrow {
 
     @Column(name = "enterprise_id")
     private Long enterpriseId;
+
+    // ── Stripe Payment Integration ───────────────────────────────
+    /** ID du PaymentIntent Stripe (ex: \"pi_3abc...\") — rempli après paiement confirmé */
+    @Column(name = "konnect_payment_ref") // colonne BDD conservée pour éviter migration
+    private String konnectPaymentRef;
 }

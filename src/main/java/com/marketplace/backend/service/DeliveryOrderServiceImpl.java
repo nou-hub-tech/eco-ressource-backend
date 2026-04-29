@@ -15,9 +15,12 @@ import java.util.stream.Collectors;
 public class DeliveryOrderServiceImpl implements IDeliveryOrderService {
 
     private final DeliveryOrderRepo deliveryOrderRepo;
+    private final DeliveryCompletionService deliveryCompletionService;
 
-    public DeliveryOrderServiceImpl(DeliveryOrderRepo deliveryOrderRepo) {
+    public DeliveryOrderServiceImpl(DeliveryOrderRepo deliveryOrderRepo,
+                                    DeliveryCompletionService deliveryCompletionService) {
         this.deliveryOrderRepo = deliveryOrderRepo;
+        this.deliveryCompletionService = deliveryCompletionService;
     }
 
     // ==================== CRUD ====================
@@ -61,7 +64,20 @@ public class DeliveryOrderServiceImpl implements IDeliveryOrderService {
         DeliveryOrder order = retrieveDeliveryOrder(id);
         if (order != null) {
             order.setStatut(statut);
-            return deliveryOrderRepo.save(order);
+            DeliveryOrder saved = deliveryOrderRepo.save(order);
+
+            // 🎯 CASCADE : Livraison terminée → facture + escrow + email
+            if (StatutCommande.LIVREE.equals(statut)) {
+                try {
+                    deliveryCompletionService.onDeliveryCompleted(id, order.getNomClient());
+                } catch (Exception e) {
+                    // La livraison est sauvée — le release escrow peut être relancé manuellement
+                    System.err.println("[DELIVERY-CASCADE] ❌ Erreur cascade: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            return saved;
         }
         return null;
     }
