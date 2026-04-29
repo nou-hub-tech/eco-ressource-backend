@@ -28,9 +28,14 @@ public class AuthService {
   private final AuthenticationManager authenticationManager;
   private final JwtUtils jwtUtils;
 
-
-  private final UserMapper userMapper;
-
+  @Transactional(readOnly = true)
+  public UserResponseDto profileForEmail(String email) {
+    User user =
+        userRepository
+            .findByEmailWithProfiles(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    return UserResponseDto.from(user);
+  }
 
   @Transactional(readOnly = true)
   public JwtResponse login(LoginRequest req) {
@@ -42,12 +47,7 @@ public class AuthService {
             .findByEmailWithProfiles(auth.getName())
             .orElseThrow(() -> new IllegalStateException("User missing after auth"));
     String token = jwtUtils.generateToken(user.getEmail(), user.getRole());
-
-
-
-    UserResponseDto dto = userMapper.toUserResponse(user);
-
-
+    UserResponseDto dto = UserResponseDto.from(user);
     return JwtResponse.builder()
         .token(token)
         .type("Bearer")
@@ -103,20 +103,13 @@ public class AuthService {
     }
     userRepository.save(user);
     User reloaded =
-        userRepository
-            .findByEmailWithProfiles(req.getEmail())
-            .orElseThrow();
+        userRepository.findByEmailWithProfiles(req.getEmail()).orElseThrow();
     String token = jwtUtils.generateToken(reloaded.getEmail(), reloaded.getRole());
     return JwtResponse.builder()
         .token(token)
         .type("Bearer")
         .role(reloaded.getRole().name())
-
         .user(UserResponseDto.from(reloaded))
-
-        .user(userMapper.toUserResponse(reloaded))
-
-
         .build();
   }
 }

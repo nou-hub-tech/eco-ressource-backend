@@ -1,81 +1,77 @@
 package com.marketplace.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-
+import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
+@Table(name = "product")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Product {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_product")
-    private Long id_product;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id_product")
+  private Long idProduct;
 
-    @NotBlank
-    private String name;
+  @NotBlank private String name;
 
-    @NotBlank
-    private String category;
+  @NotBlank private String category;
 
-    @NotBlank
-    private String materialType;
+  @NotBlank private String materialType;
 
-    private boolean recyclable;
+  private boolean recyclable;
 
-    @NotBlank
-    @Column(length = 1000)
-    private String description;
+  @NotBlank
+  @Column(length = 1000)
+  private String description;
 
-    @NotBlank
-    private String image;
+  @NotBlank private String image;
 
-    private String barcode;
+  private String barcode;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "enterprise_id")
-    @JsonIgnore
-    private Enterprise enterprise;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "enterprise_id")
+  @JsonIgnore
+  private Enterprise enterprise;
 
-    public Enterprise getEnterprise() { return enterprise; }
-    public void setEnterprise(Enterprise enterprise) { this.enterprise = enterprise; }
+  @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+  @JsonIgnore
+  @Builder.Default
+  private List<StockItem> stockItems = new ArrayList<>();
 
-    // Expose juste l'ID en JSON (sans boucle infinie)
-    public Long getEnterpriseId() {
-        return enterprise != null ? enterprise.getId() : null;
-    }
+  /** JSON-safe enterprise id (avoids lazy cycle). */
+  public Long getEnterpriseId() {
+    return enterprise != null ? enterprise.getId() : null;
+  }
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<StockItem> stockItems;
+  /** Alias used by inventory / product REST layer. */
+  public Long getId_product() {
+    return idProduct;
+  }
 
-    public Long getId_product() { return id_product; }
-    public void setId_product(Long id_product) { this.id_product = id_product; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
-
-    public String getMaterialType() { return materialType; }
-    public void setMaterialType(String materialType) { this.materialType = materialType; }
-
-    public boolean isRecyclable() { return recyclable; }
-    public void setRecyclable(boolean recyclable) { this.recyclable = recyclable; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public String getImage() { return image; }
-    public void setImage(String image) { this.image = image; }
-
-    public String getBarcode() { return barcode; }
-    public void setBarcode(String barcode) { this.barcode = barcode; }
-
-
-    public List<StockItem> getStockItems() { return stockItems; }
-    public void setStockItems(List<StockItem> stockItems) { this.stockItems = stockItems; }
+  public void setId_product(Long id) {
+    this.idProduct = id;
+  }
 }
