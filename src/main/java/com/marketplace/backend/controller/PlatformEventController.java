@@ -92,17 +92,19 @@ public class PlatformEventController {
   }
 
   @PostMapping("/{id}/publish-facebook")
-public ResponseEntity<String> publishToFacebook(@PathVariable Long id) {
-  try {
-    String result = facebookService.publishEvent(id);
-    return ResponseEntity.ok(result);
-  } catch (IllegalStateException e) {
-    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-        .body("Facebook not configured: " + e.getMessage());
-  } catch (Exception e) {
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body("Publish failed: " + e.getMessage());
+  public ResponseEntity<String> publishToFacebook(
+      @PathVariable Long id, 
+      @RequestParam("image") org.springframework.web.multipart.MultipartFile image) {
+    try {
+      String result = facebookService.publishEvent(id, image);
+      return ResponseEntity.ok(result);
+    } catch (IllegalStateException e) {
+      return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+          .body("Facebook not configured: " + e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("Publish failed: " + e.getMessage());
+    }
   }
-}
 
 }

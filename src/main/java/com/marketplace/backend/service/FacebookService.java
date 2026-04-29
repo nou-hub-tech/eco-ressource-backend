@@ -13,6 +13,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +36,9 @@ public class FacebookService {
   @Value("${facebook.page.token:}")
   private String pageToken;
 
-  public String publishEvent(Long eventId) {
+  private final RestTemplate restTemplate = new RestTemplate();
+
+  public String publishEvent(Long eventId, MultipartFile image) {
     if (pageId.isEmpty() || pageToken.isEmpty()) {
       throw new IllegalStateException("Facebook not configured");
     }
@@ -38,27 +49,32 @@ public class FacebookService {
     String postContent = buildPost(event);
 
     try {
-      HttpClient client = HttpClient.newHttpClient();
-      String url = String.format(
-          "https://graph.facebook.com/v19.0/%s/feed?message=%s&access_token=%s",
-          pageId,
-          URLEncoder.encode(postContent, StandardCharsets.UTF_8),
-          pageToken
-      );
+      String url = String.format("https://graph.facebook.com/v19.0/%s/photos", pageId);
 
-      HttpRequest request = HttpRequest.newBuilder()
-          .uri(URI.create(url))
-          .POST(HttpRequest.BodyPublishers.noBody())
-          .build();
+      HttpHeaders headers = new HttpHeaders();
+      headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+      MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+      body.add("message", postContent);
+      body.add("access_token", pageToken);
+      
+      ByteArrayResource resource = new ByteArrayResource(image.getBytes()) {
+          @Override
+          public String getFilename() {
+              return "poster.png";
+          }
+      };
+      body.add("source", resource);
 
-      if (response.statusCode() == 200) {
-        log.info("Published event {} to Facebook", eventId);
-        return response.body();
+      HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+      ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+
+      if (response.getStatusCode().is2xxSuccessful()) {
+        log.info("Published event {} to Facebook as photo", eventId);
+        return response.getBody();
       } else {
-        log.error("Facebook API error: {}", response.body());
-        throw new RuntimeException("Facebook publish failed: " + response.body());
+        log.error("Facebook API error: {}", response.getBody());
+        throw new RuntimeException("Facebook publish failed: " + response.getBody());
       }
     } catch (Exception e) {
       log.error("Error publishing to Facebook", e);
