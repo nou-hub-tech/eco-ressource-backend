@@ -80,9 +80,7 @@ public class UserController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Void> delete(@PathVariable Long id) {
     try {
-
-      userService.deleteUser(id);
-
+      userService.delete(id);
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();

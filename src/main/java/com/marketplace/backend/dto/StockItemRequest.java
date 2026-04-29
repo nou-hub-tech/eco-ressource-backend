@@ -1,25 +1,35 @@
 package com.marketplace.backend.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import java.time.LocalDate;
 import lombok.Data;
 
 @Data
 public class StockItemRequest {
 
-  @NotNull private Long enterpriseId;
+  private Long companyId;
 
-  @NotBlank private String name;
+  private String itemCondition;
 
-  @NotBlank private String category;
+  private LocalDate expirationDate;
 
-  @NotNull private Integer quantity;
+  private String image;
 
-  @NotBlank private String unit;
+  private String location;
 
-  private String conditionLabel;
+  @NotNull(message = "La quantite est obligatoire")
+  @Positive(message = "La quantite doit etre strictement positive")
+  private Integer quantity;
 
-  @NotBlank private String status;
+  private String status;
 
-  private String aiInsight;
+  private String unit;
+
+  private Long idProduct;
+
+  @NotNull(message = "Le prix unitaire est obligatoire")
+  @PositiveOrZero(message = "Le prix unitaire doit etre positif ou nul")
+  private Double unitPrice;
 }

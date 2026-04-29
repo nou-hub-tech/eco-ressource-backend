@@ -24,7 +24,7 @@ public class TransportController {
   private final TransportService transportService;
 
   @PostMapping("/offer")
-  @PreAuthorize("hasAnyRole('TRANSPORTER','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_TRANSPORTER','ROLE_ADMIN')")
   public ResponseEntity<Void> offer(
       Authentication auth, @Valid @RequestBody TransportOfferRequest req) {
     try {
@@ -36,7 +36,7 @@ public class TransportController {
   }
 
   @GetMapping("/deliveries/transporter")
-  @PreAuthorize("hasAnyRole('TRANSPORTER','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_TRANSPORTER','ROLE_ADMIN')")
   public ResponseEntity<List<DeliveryDto>> deliveriesTransporter(Authentication auth) {
     try {
       return ResponseEntity.ok(transportService.deliveriesForTransporter(auth));
@@ -46,7 +46,7 @@ public class TransportController {
   }
 
   @GetMapping("/deliveries/enterprise")
-  @PreAuthorize("hasAnyRole('ENTERPRISE','ADMIN')")
+  @PreAuthorize("hasAnyAuthority('ROLE_ENTERPRISE','ROLE_ADMIN')")
   public ResponseEntity<List<DeliveryDto>> deliveriesEnterprise(Authentication auth) {
     try {
       return ResponseEntity.ok(transportService.deliveriesForEnterprise(auth));

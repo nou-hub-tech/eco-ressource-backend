@@ -32,9 +32,9 @@ public class FileUploadController {
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
         String fileName = fileStorageService.storeFile(file);
-        // Return relative URL so the frontend proxy handles the port correctly
-        String fileUrl = "/files/" + fileName;
-        return ResponseEntity.ok(Map.of("url", fileUrl, "filename", fileName));
+        String relativeUrl = "/files/" + fileName;
+        return ResponseEntity.ok(
+                Map.of("url", relativeUrl, "path", relativeUrl, "filename", fileName));
     }
 
     @GetMapping("/{filename}")

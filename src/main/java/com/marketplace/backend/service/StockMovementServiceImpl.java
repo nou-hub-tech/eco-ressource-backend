@@ -6,7 +6,7 @@ import com.marketplace.backend.repository.IStockItemRepository;
 import com.marketplace.backend.repository.IStockMovementRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -40,7 +40,7 @@ public class StockMovementServiceImpl implements IStockMovementService {
         movement.setMovementType(type);
         movement.setQuantity(quantity);
         movement.setDescription(description);
-        movement.setMovementDate(new Date());
+        movement.setMovementDate(LocalDateTime.now());
         movement.setStockItem(stockItem);
 
         // ✅ Set status based on movement type

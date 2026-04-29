@@ -1,8 +1,6 @@
 package com.marketplace.backend.entity;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import com.marketplace.backend.entity.enums.EventStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,7 +22,6 @@ import lombok.Setter;
 @Entity
 @Table(name = "platform_events")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-
 @Getter
 @Setter
 @NoArgsConstructor

@@ -1,50 +1,52 @@
 package com.marketplace.backend.entity;
 
-import jakarta.persistence.*;
-import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
+@Table(name = "stock_movement")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class StockMovement {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String movementType; // IN, OUT, UPDATE, DELETED, RESTORED
-    private int quantity;
+  private String description;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date movementDate;
+  @Column(name = "movement_date")
+  private LocalDateTime movementDate;
 
-    private String description;
+  @Column(name = "movement_type")
+  private String movementType;
 
-    @ManyToOne
-    @JoinColumn(name = "id_stock")
-    private StockItem stockItem;
+  @Column(nullable = false)
+  private int quantity;
 
-    @Column(nullable = false)
-    private String status = "ACTIVE";  // ✅ ADD THIS - ACTIVE, DELETED, RESTORED
+  @Column(nullable = false)
+  @Builder.Default
+  private String status = "ACTIVE";
 
-    // GETTERS & SETTERS
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getMovementType() { return movementType; }
-    public void setMovementType(String movementType) { this.movementType = movementType; }
-
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-
-    public Date getMovementDate() { return movementDate; }
-    public void setMovementDate(Date movementDate) { this.movementDate = movementDate; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public StockItem getStockItem() { return stockItem; }
-    public void setStockItem(StockItem stockItem) { this.stockItem = stockItem; }
-
-    public String getStatus() { return status; }  // ✅ ADD THIS
-    public void setStatus(String status) { this.status = status; }  // ✅ ADD THIS
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "id_stock")
+  private StockItem stockItem;
 }

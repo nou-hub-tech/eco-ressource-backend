@@ -30,7 +30,7 @@ public interface IStockItemRepository extends JpaRepository<StockItem, Long> {
     @Query("SELECT COALESCE(SUM(s.quantity * s.unitPrice), 0) FROM StockItem s WHERE s.deleted = false")
     Double calculateTotalStockValue();
 
-    @Query("SELECT COALESCE(SUM(s.quantity * s.unitPrice), 0) FROM StockItem s WHERE s.product.id_product = :id_product AND s.deleted = false")
+    @Query("SELECT COALESCE(SUM(s.quantity * s.unitPrice), 0) FROM StockItem s WHERE s.product.idProduct = :id_product AND s.deleted = false")
     Double calculateTotalValueByProduct(@Param("id_product") Long id_product);
 
     @Query("""
@@ -50,7 +50,7 @@ public interface IStockItemRepository extends JpaRepository<StockItem, Long> {
     @Query("SELECT s FROM StockItem s WHERE s.expirationDate BETWEEN CURRENT_DATE AND :limitDate AND s.deleted = false")
     List<StockItem> findNearExpiryStockItems(@Param("limitDate") Date limitDate);
 
-    @Query("SELECT s FROM StockItem s WHERE s.product.id_product = :id_product AND s.deleted = false")
+    @Query("SELECT s FROM StockItem s WHERE s.product.idProduct = :id_product AND s.deleted = false")
     List<StockItem> findByProductId(@Param("id_product") Long id_product);
 
     @Query("""
@@ -70,7 +70,7 @@ public interface IStockItemRepository extends JpaRepository<StockItem, Long> {
     List<Map<String, Object>> getStatsByLocation();
 
     // Advanced statistics queries
-    @Query("SELECT COUNT(DISTINCT s.product.id_product) FROM StockItem s WHERE s.deleted = false")
+    @Query("SELECT COUNT(DISTINCT s.product.idProduct) FROM StockItem s WHERE s.deleted = false")
     Long countDistinctProducts();
 
     @Query("SELECT AVG(s.unitPrice) FROM StockItem s WHERE s.deleted = false")
