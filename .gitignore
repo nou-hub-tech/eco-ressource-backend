@@ -41,3 +41,5 @@ guide code/
 uploads/
 application.properties
 *.log
+
+.env

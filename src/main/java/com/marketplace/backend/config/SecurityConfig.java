@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import jakarta.servlet.DispatcherType;
+
 
 @Configuration
 @EnableWebSecurity
@@ -95,7 +97,8 @@ public class SecurityConfig {
                     .requestMatchers("/api/users/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/platform-events/**")
-                    .hasRole("ADMIN")
+                    .permitAll()
+                    .requestMatchers("/api/ai/**").authenticated()
                     .requestMatchers(HttpMethod.GET, "/api/solidarity-associations/**", "/api/donations/**")
                     .permitAll()
                     .requestMatchers("/api/enterprises/**")
