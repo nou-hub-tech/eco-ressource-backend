@@ -315,7 +315,7 @@ public class ReservationSlotService {
       return e;
     }
 
-    throw new IllegalArgumentException("enterpriseId is required");
+    return securityUserHelper.requireEnterprise(auth);
   }
 
   private void assertCanRead(User u, ReservationSlot s) {

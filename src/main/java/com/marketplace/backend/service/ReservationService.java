@@ -50,10 +50,14 @@ public class ReservationService {
     }
 
     Long eid = u.getEnterprise().getId();
+    List<Reservation> source = includeDeleted
+      ? reservationRepository.findAll()
+      : reservationRepository.findAllActive();
 
-    return includeDeleted
-      ? reservationRepository.findByEnterpriseId(eid)
-      : reservationRepository.findActiveByEnterpriseId(eid);
+    return source.stream()
+      .filter(r -> isRelatedToEnterprise(r, eid))
+      .distinct()
+      .toList();
   }
 
   @Transactional(readOnly = true)
@@ -68,11 +72,11 @@ public class ReservationService {
   private void assertCanRead(User u, Reservation r) {
     if (u.getRole() == Role.ROLE_ADMIN) return;
 
-    if (r.getEnterprise() == null || u.getEnterprise() == null) {
+    if (u.getEnterprise() == null) {
       throw new IllegalArgumentException("Forbidden");
     }
 
-    if (!r.getEnterprise().getId().equals(u.getEnterprise().getId())) {
+    if (!isRelatedToEnterprise(r, u.getEnterprise().getId())) {
       throw new IllegalArgumentException("Forbidden");
     }
   }
@@ -135,9 +139,7 @@ public class ReservationService {
 
     Enterprise enterprise = resolveEnterprise(auth, req == null ? null : req.getEnterpriseId());
 
-    if (slot.getEnterprise() == null
-      || enterprise == null
-      || !slot.getEnterprise().getId().equals(enterprise.getId())) {
+    if (slot.getEnterprise() == null || enterprise == null) {
       throw new IllegalArgumentException("Forbidden");
     }
 
@@ -326,7 +328,7 @@ public class ReservationService {
     }
 
     if (requestedEnterpriseId == null) {
-      return u.getEnterprise();
+      return u.getEnterprise() != null ? u.getEnterprise() : securityUserHelper.requireEnterprise(auth);
     }
 
     return enterpriseRepository.findById(requestedEnterpriseId)
@@ -377,5 +379,20 @@ public class ReservationService {
 
   private boolean equalsNullable(Object left, Object right) {
     return left == null ? right == null : left.equals(right);
+  }
+
+  private boolean isRelatedToEnterprise(Reservation reservation, Long enterpriseId) {
+    if (enterpriseId == null || reservation == null) {
+      return false;
+    }
+
+    if (reservation.getEnterprise() != null
+      && enterpriseId.equals(reservation.getEnterprise().getId())) {
+      return true;
+    }
+
+    return reservation.getSlot() != null
+      && reservation.getSlot().getEnterprise() != null
+      && enterpriseId.equals(reservation.getSlot().getEnterprise().getId());
   }
 }
