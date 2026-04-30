@@ -23,7 +23,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/stockitem")
-@CrossOrigin(origins = "http://localhost:4200")
 public class StockItemRestController {
 
     private final IStockItemService stockItemService;

@@ -14,7 +14,6 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/inventory")
-@CrossOrigin(origins = "http://localhost:4200")
 public class InventoryController {
 
     private final IProductRepository productRepo;

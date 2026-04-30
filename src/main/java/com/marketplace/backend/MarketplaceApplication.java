@@ -14,7 +14,6 @@ public class MarketplaceApplication {
   public static void main(String[] args) {
     // Load .env file (checking root and subfolder)
     Dotenv dotenv = Dotenv.configure()
-        .directory("./eco-ressource-backend")
         .ignoreIfMissing()
         .load();
 

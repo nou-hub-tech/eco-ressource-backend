@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/ai")
-@CrossOrigin(origins = "http://localhost:4200")
 public class AIProxyController {
 
     @Value("${groq.api.key:}")
