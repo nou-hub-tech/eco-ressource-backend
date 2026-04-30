@@ -15,9 +15,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class ReservationSlotService {
   private final ReservationSlotRepository slotRepository;
   private final EnterpriseRepository enterpriseRepository;
   private final SecurityUserHelper securityUserHelper;
+  private final AiService aiService;
 
   // =========================================================
   // READ
@@ -78,6 +82,40 @@ public class ReservationSlotService {
     return slots.stream()
       .filter(s -> s.getEnterprise() != null && eid.equals(s.getEnterprise().getId()))
       .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public BigDecimal usageRate(LocalDate from, LocalDate to) {
+    List<ReservationSlot> slots = findInRange(from, to);
+
+    if (slots.isEmpty()) {
+      return BigDecimal.ZERO;
+    }
+
+    long booked = slots.stream()
+      .filter(s -> s.getStatus() == SlotStatus.booked)
+      .count();
+
+    return BigDecimal.valueOf(booked)
+      .divide(BigDecimal.valueOf(slots.size()), 4, java.math.RoundingMode.HALF_UP);
+  }
+
+  @Transactional(readOnly = true)
+  public Map<String, Long> demandDensity(LocalDate from, LocalDate to) {
+    Map<String, Long> density = new TreeMap<>();
+
+    for (ReservationSlot slot : findInRange(from, to)) {
+      String key = slot.getDate() + "-" + slot.getStartHour();
+      density.merge(key, slot.getStatus() == SlotStatus.booked ? 1L : 0L, Long::sum);
+    }
+
+    return density;
+  }
+
+  @Transactional(readOnly = true)
+  public Map<Long, Double> suggestBestSlots(LocalDate from, LocalDate to) {
+    List<ReservationSlot> slots = findInRange(from, to);
+    return aiService.suggestBestSlots(slots, demandDensity(from, to));
   }
 
   @Transactional(readOnly = true)

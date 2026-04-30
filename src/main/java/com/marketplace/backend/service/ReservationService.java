@@ -16,7 +16,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class ReservationService {
   private final ReservationSlotRepository slotRepository;
   private final EnterpriseRepository enterpriseRepository;
   private final SecurityUserHelper securityUserHelper;
+  private final AiService aiService;
 
   // =========================================================
   // READ
@@ -108,6 +111,12 @@ public class ReservationService {
       throw new IllegalArgumentException("Forbidden");
     }
 
+    predictReservationPriority(
+      slot.getDate(),
+      slot.getEndHour() - slot.getStartHour(),
+      List.of(slot)
+    );
+
     Reservation r = Reservation.builder()
       .company(enterprise.getCompanyName())
       .machine(slot.getMachine())
@@ -156,6 +165,43 @@ public class ReservationService {
     }
 
     return reservationRepository.save(r);
+  }
+
+  @Transactional(readOnly = true)
+  public List<Reservation> findFiltered(
+    Authentication auth,
+    ReservationStatus status,
+    LocalDate date,
+    boolean includeDeleted) {
+
+    return findAll(auth, includeDeleted).stream()
+      .filter(r -> status == null || r.getStatus() == status)
+      .filter(r -> date == null || date.equals(r.getDate()))
+      .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public Map<String, Object> summarize(Authentication auth, boolean includeDeleted) {
+    List<Reservation> reservations = findAll(auth, includeDeleted);
+
+    int totalHours = reservations.stream()
+      .map(Reservation::getHours)
+      .filter(h -> h != null)
+      .mapToInt(Integer::intValue)
+      .sum();
+
+    return Map.of(
+      "count", reservations.size(),
+      "totalHours", totalHours
+    );
+  }
+
+  public String predictReservationPriority(
+    LocalDate date,
+    Integer hours,
+    List<ReservationSlot> slots) {
+
+    return aiService.predictReservationPriority(date, hours, slots);
   }
 
   // =========================================================

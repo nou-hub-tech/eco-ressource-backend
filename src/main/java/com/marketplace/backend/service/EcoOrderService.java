@@ -26,6 +26,7 @@ public class EcoOrderService {
   private final EcoOrderRepository orderRepository;
   private final EnterpriseRepository enterpriseRepository;
   private final SecurityUserHelper securityUserHelper;
+  private final AiService aiService;
 
   /** DRAFT → CONFIRMED → SHIPPED → DELIVERED. */
   private static final List<OrderStatus> WORKFLOW =
@@ -75,7 +76,7 @@ public class EcoOrderService {
             : parseStatus(req.getStatus());
     EcoGrade grade =
         req.getGrade() == null || req.getGrade().isBlank()
-            ? inferGrade(req.getMaterial(), req.getDistanceKm())
+            ? aiGrade(req.getCo2Saved(), null, null)
             : parseGrade(req.getGrade());
 
     EcoOrder o =
@@ -129,11 +130,15 @@ public class EcoOrderService {
     o.setSupplier(req.getSupplier());
     o.setDistanceKm(req.getDistanceKm());
     if (req.getOrderDate() != null) o.setOrderDate(req.getOrderDate());
-    if (req.getStatus() != null) o.setStatus(parseStatus(req.getStatus()));
+    if (req.getStatus() != null) {
+      OrderStatus nextStatus = parseStatus(req.getStatus());
+      validateStatusTransition(o.getStatus(), nextStatus);
+      o.setStatus(nextStatus);
+    }
     if (req.getGrade() != null) {
       o.setGrade(parseGrade(req.getGrade()));
     } else {
-      o.setGrade(inferGrade(req.getMaterial(), req.getDistanceKm()));
+      o.setGrade(aiGrade(req.getCo2Saved(), null, null));
     }
     if (req.getCo2Saved() != null) o.setCo2Saved(req.getCo2Saved());
     if (req.getWaterSaved() != null) o.setWaterSaved(req.getWaterSaved());
@@ -288,5 +293,39 @@ public class EcoOrderService {
           case E -> 0.1;
         };
     return qtyKg.multiply(BigDecimal.valueOf(factor)).setScale(2, java.math.RoundingMode.HALF_UP);
+  }
+
+  @Transactional(readOnly = true)
+  public BigDecimal totalCo2Saved(Authentication auth, boolean includeDeleted) {
+    return findAll(auth, includeDeleted).stream()
+        .map(EcoOrder::getCo2Saved)
+        .filter(java.util.Objects::nonNull)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  private EcoGrade aiGrade(BigDecimal co2Saved, Boolean solar, Integer durationHours) {
+    AiService.EcoScoreResult result = aiService.computeEcoScore(co2Saved, solar, durationHours);
+    String grade = result.grade();
+    if (grade == null || grade.isBlank()) {
+      return inferGrade(null, null);
+    }
+    return parseGrade(grade);
+  }
+
+  private void validateStatusTransition(OrderStatus current, OrderStatus next) {
+    if (current == null || next == null || current == next) {
+      return;
+    }
+
+    if (current == OrderStatus.cancelled || current == OrderStatus.delivered) {
+      throw new IllegalArgumentException("Invalid order status transition");
+    }
+
+    int currentIdx = WORKFLOW.indexOf(current);
+    int nextIdx = WORKFLOW.indexOf(next);
+
+    if (next != OrderStatus.cancelled && (currentIdx < 0 || nextIdx != currentIdx + 1)) {
+      throw new IllegalArgumentException("Invalid order status transition");
+    }
   }
 }
