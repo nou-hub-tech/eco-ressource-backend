@@ -11,9 +11,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,12 +24,24 @@ public class AiService {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final HttpClient httpClient =
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+  private final String configuredApiKey;
+  private final String configuredApiUrl;
+  private final String configuredModel;
+
+  public AiService(
+      @Value("${openai.api.key:}") String configuredApiKey,
+      @Value("${openai.api.url:https://api.openai.com/v1/chat/completions}") String configuredApiUrl,
+      @Value("${openai.model:gpt-4o-mini}") String configuredModel) {
+    this.configuredApiKey = configuredApiKey;
+    this.configuredApiUrl = configuredApiUrl;
+    this.configuredModel = configuredModel;
+  }
 
   public String predictReservationPriority(
       LocalDate date, Integer hours, List<ReservationSlot> slots) {
     String prompt =
-        "Given reservation data, classify priority: LOW, MEDIUM, HIGH based on urgency and demand. "
-            + "Return JSON only with field priority. "
+        "Classify reservation priority using only LOW, MEDIUM, or HIGH. "
+            + "Return strict JSON with fields priority, confidence, and rationale. "
             + "date="
             + date
             + ", hours="
@@ -37,17 +51,24 @@ public class AiService {
 
     try {
       JsonNode json = callModel(prompt);
-      String priority = json.path("priority").asText();
-      return priority == null || priority.isBlank() ? "MEDIUM" : priority;
+      String priority = json.path("priority").asText("MEDIUM").trim().toUpperCase();
+      if (!List.of("LOW", "MEDIUM", "HIGH").contains(priority)) {
+        return "MEDIUM";
+      }
+      return priority;
     } catch (Exception ex) {
       return "MEDIUM";
     }
   }
 
   public Map<Long, Double> suggestBestSlots(List<ReservationSlot> slots, Map<String, Long> density) {
+    if (slots == null || slots.isEmpty()) {
+      return Map.of();
+    }
+
     String prompt =
-        "Given slot availability and demand, suggest the best slots for optimal efficiency. "
-            + "Return JSON object where keys are slot IDs and values are scores from 0 to 1. "
+        "Rank the provided slot ids by sustainability, availability, and demand balance. "
+            + "Return strict JSON with field scores as an object of slotId -> score from 0 to 1. "
             + "slots="
             + summarizeSlots(slots)
             + ", density="
@@ -58,16 +79,29 @@ public class AiService {
       Map<Long, Double> scores = new HashMap<>();
       json.fields()
           .forEachRemaining(entry -> scores.put(Long.valueOf(entry.getKey()), entry.getValue().asDouble()));
-      return scores;
+      if (!scores.isEmpty()) {
+        return scores;
+      }
     } catch (Exception ex) {
-      return Map.of();
+      // Safe fallback below.
     }
+
+    List<ReservationSlot> ranked = new ArrayList<>(slots);
+    ranked.sort(
+        (left, right) ->
+            Double.compare(fallbackSlotScore(right, density), fallbackSlotScore(left, density)));
+    Map<Long, Double> fallback = new HashMap<>();
+    double max = ranked.stream().mapToDouble(slot -> fallbackSlotScore(slot, density)).max().orElse(1.0d);
+    for (ReservationSlot slot : ranked) {
+      fallback.put(slot.getId(), Math.max(0.0d, Math.min(1.0d, fallbackSlotScore(slot, density) / max)));
+    }
+    return fallback;
   }
 
   public EcoScoreResult computeEcoScore(BigDecimal co2Saved, Boolean solar, Integer durationHours) {
     String prompt =
-        "Evaluate eco efficiency and assign a grade (A-E) with a score. "
-            + "Return JSON only with fields grade and score. "
+        "Evaluate eco efficiency and assign a grade from A to E with a numeric score from 0 to 100. "
+            + "Return strict JSON with fields grade and score. "
             + "co2Saved="
             + co2Saved
             + ", solar="
@@ -77,22 +111,30 @@ public class AiService {
 
     try {
       JsonNode json = callModel(prompt);
-      String grade = json.path("grade").asText();
+      String grade = json.path("grade").asText().trim().toUpperCase();
       double score = json.path("score").asDouble(0.0);
-      return new EcoScoreResult(grade, score);
+      if (!List.of("A", "B", "C", "D", "E").contains(grade)) {
+        return fallbackEcoScore(co2Saved, solar, durationHours);
+      }
+      return new EcoScoreResult(grade, Math.max(0.0d, Math.min(100.0d, score)));
     } catch (Exception ex) {
-      return new EcoScoreResult(null, 0.0);
+      return fallbackEcoScore(co2Saved, solar, durationHours);
     }
   }
 
   private JsonNode callModel(String prompt) throws IOException, InterruptedException {
-    String apiKey = System.getenv("OPENAI_API_KEY");
+    String apiKey =
+        configuredApiKey != null && !configuredApiKey.isBlank()
+            ? configuredApiKey
+            : System.getenv("OPENAI_API_KEY");
     if (apiKey == null || apiKey.isBlank()) {
       throw new IOException("OPENAI_API_KEY is missing");
     }
 
     Map<String, Object> body = Map.of(
-        "model", System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini"),
+        "model",
+            System.getenv().getOrDefault(
+                "OPENAI_MODEL", configuredModel == null || configuredModel.isBlank() ? "gpt-4o-mini" : configuredModel),
         "messages", List.of(
             Map.of("role", "system", "content", "You are a strict JSON API. Respond with JSON only."),
             Map.of("role", "user", "content", prompt)
@@ -102,7 +144,13 @@ public class AiService {
 
     HttpRequest request =
         HttpRequest.newBuilder()
-            .uri(URI.create(System.getenv().getOrDefault("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")))
+            .uri(
+                URI.create(
+                    System.getenv().getOrDefault(
+                        "OPENAI_API_URL",
+                        configuredApiUrl == null || configuredApiUrl.isBlank()
+                            ? "https://api.openai.com/v1/chat/completions"
+                            : configuredApiUrl)))
             .timeout(Duration.ofSeconds(30))
             .header("Authorization", "Bearer " + apiKey)
             .header("Content-Type", "application/json")
@@ -110,8 +158,14 @@ public class AiService {
             .build();
 
     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() < 200 || response.statusCode() >= 300) {
+      throw new IOException("AI API call failed with status " + response.statusCode());
+    }
     JsonNode root = objectMapper.readTree(response.body());
     String content = root.path("choices").path(0).path("message").path("content").asText();
+    if (content == null || content.isBlank()) {
+      throw new IOException("AI API returned empty content");
+    }
     return objectMapper.readTree(content);
   }
 
@@ -129,6 +183,56 @@ public class AiService {
                         s.getStatus()))
         .toList()
         .toString();
+  }
+
+  private EcoScoreResult fallbackEcoScore(BigDecimal co2Saved, Boolean solar, Integer durationHours) {
+    double score = co2Saved == null ? 0.0d : co2Saved.doubleValue() * 2.5d;
+    if (Boolean.TRUE.equals(solar)) {
+      score += 18.0d;
+    }
+    if (durationHours != null && durationHours > 0) {
+      score += Math.min(20.0d, durationHours * 2.0d);
+    }
+    double normalized = Math.max(0.0d, Math.min(100.0d, score));
+    String grade;
+    if (normalized >= 80.0d) {
+      grade = "A";
+    } else if (normalized >= 65.0d) {
+      grade = "B";
+    } else if (normalized >= 45.0d) {
+      grade = "C";
+    } else if (normalized >= 25.0d) {
+      grade = "D";
+    } else {
+      grade = "E";
+    }
+    return new EcoScoreResult(grade, normalized);
+  }
+
+  private double fallbackSlotScore(ReservationSlot slot, Map<String, Long> density) {
+    if (slot == null || slot.getId() == null) {
+      return 0.0d;
+    }
+    double score = 10.0d;
+    if (Boolean.TRUE.equals(slot.getSolar())) {
+      score += 20.0d;
+    }
+    if (slot.getStartHour() != null) {
+      int hour = slot.getStartHour();
+      if (hour >= 0 && hour <= 6) {
+        score += 12.0d;
+      } else if (hour >= 12 && hour <= 16) {
+        score += 10.0d;
+      } else if (hour >= 18 && hour <= 22) {
+        score -= 6.0d;
+      }
+    }
+    if (slot.getStartHour() != null && slot.getEndHour() != null) {
+      score += Math.max(0.0d, 8.0d - (slot.getEndHour() - slot.getStartHour()));
+    }
+    String key = slot.getDate() + "-" + slot.getStartHour();
+    score -= density.getOrDefault(key, 0L) * 2.0d;
+    return Math.max(1.0d, score);
   }
 
   public record EcoScoreResult(String grade, double score) {}

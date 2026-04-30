@@ -11,7 +11,6 @@ import com.marketplace.backend.repository.ReservationSlotRepository;
 import com.marketplace.backend.security.SecurityUserHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,13 +57,12 @@ public class ReservationSlotService {
   }
 
   @Transactional(readOnly = true)
-  public List<ReservationSlot> findInRange(LocalDate from, LocalDate to) {
+  public List<ReservationSlot> findInRange(Authentication auth, LocalDate from, LocalDate to) {
 
     if (from == null || to == null || from.isAfter(to)) {
       throw new IllegalArgumentException("Invalid date range");
     }
 
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     User u = securityUserHelper.requireUser(auth);
 
     List<ReservationSlot> slots = slotRepository.findInRange(from, to);
@@ -85,8 +83,8 @@ public class ReservationSlotService {
   }
 
   @Transactional(readOnly = true)
-  public BigDecimal usageRate(LocalDate from, LocalDate to) {
-    List<ReservationSlot> slots = findInRange(from, to);
+  public BigDecimal usageRate(Authentication auth, LocalDate from, LocalDate to) {
+    List<ReservationSlot> slots = findInRange(auth, from, to);
 
     if (slots.isEmpty()) {
       return BigDecimal.ZERO;
@@ -101,10 +99,10 @@ public class ReservationSlotService {
   }
 
   @Transactional(readOnly = true)
-  public Map<String, Long> demandDensity(LocalDate from, LocalDate to) {
+  public Map<String, Long> demandDensity(Authentication auth, LocalDate from, LocalDate to) {
     Map<String, Long> density = new TreeMap<>();
 
-    for (ReservationSlot slot : findInRange(from, to)) {
+    for (ReservationSlot slot : findInRange(auth, from, to)) {
       String key = slot.getDate() + "-" + slot.getStartHour();
       density.merge(key, slot.getStatus() == SlotStatus.booked ? 1L : 0L, Long::sum);
     }
@@ -113,9 +111,11 @@ public class ReservationSlotService {
   }
 
   @Transactional(readOnly = true)
-  public Map<Long, Double> suggestBestSlots(LocalDate from, LocalDate to) {
-    List<ReservationSlot> slots = findInRange(from, to);
-    return aiService.suggestBestSlots(slots, demandDensity(from, to));
+  public Map<Long, Double> suggestBestSlots(Authentication auth, LocalDate from, LocalDate to) {
+    List<ReservationSlot> slots = findInRange(auth, from, to).stream()
+      .filter(slot -> slot.getStatus() == SlotStatus.open)
+      .toList();
+    return aiService.suggestBestSlots(slots, demandDensity(auth, from, to));
   }
 
   @Transactional(readOnly = true)

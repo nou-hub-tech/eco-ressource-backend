@@ -1,5 +1,6 @@
 package com.marketplace.backend.service;
 
+import com.marketplace.backend.dto.ReservationRequest;
 import com.marketplace.backend.entity.Enterprise;
 import com.marketplace.backend.entity.Reservation;
 import com.marketplace.backend.entity.ReservationSlot;
@@ -81,7 +82,41 @@ public class ReservationService {
   // =========================================================
 
   @Transactional
-  public Reservation createWithSlot(Authentication auth, Long slotId) {
+  public Reservation create(Authentication auth, ReservationRequest req) {
+    Enterprise enterprise = resolveEnterprise(auth, req == null ? null : req.getEnterpriseId());
+
+    if (enterprise == null) {
+      throw new IllegalArgumentException("Enterprise profile required");
+    }
+
+    ReservationStatus status =
+      req != null && req.getStatus() != null && !req.getStatus().isBlank()
+        ? ReservationStatus.fromJson(req.getStatus())
+        : ReservationStatus.PENDING;
+
+    Reservation r = Reservation.builder()
+      .company(firstNonBlank(req == null ? null : req.getCompanyName(), enterprise.getCompanyName()))
+      .machine(firstNonBlank(req == null ? null : req.getMachine(), req == null ? null : req.getItem()))
+      .date(firstNonNull(req == null ? null : req.getFromDate(), req == null ? null : req.getToDate()))
+      .startHour(firstNonNull(req == null ? null : req.getStartHour(), 0))
+      .hours(firstNonNull(req == null ? null : req.getHours(), 1))
+      .solar(Boolean.TRUE.equals(req == null ? null : req.getSolar()))
+      .status(status)
+      .co2Saved(req == null ? null : req.getCo2Saved())
+      .enterprise(enterprise)
+      .deleted(false)
+      .build();
+
+    r.setStatus(req != null && req.getStatus() != null && !req.getStatus().isBlank()
+      ? ReservationStatus.fromJson(req.getStatus())
+      : ReservationStatus.PENDING);
+    r.setCo2Saved(req == null ? null : req.getCo2Saved());
+
+    return reservationRepository.save(r);
+  }
+
+  @Transactional
+  public Reservation createWithSlot(Authentication auth, Long slotId, ReservationRequest req) {
 
     ReservationSlot slot = slotRepository.findById(slotId)
       .orElseThrow(() -> new IllegalArgumentException("Slot not found"));
@@ -98,15 +133,10 @@ public class ReservationService {
       throw new IllegalArgumentException("Slot is blocked");
     }
 
-    User u = securityUserHelper.requireUser(auth);
-
-    if (u.getEnterprise() == null) {
-      throw new IllegalArgumentException("Forbidden");
-    }
-
-    Enterprise enterprise = u.getEnterprise();
+    Enterprise enterprise = resolveEnterprise(auth, req == null ? null : req.getEnterpriseId());
 
     if (slot.getEnterprise() == null
+      || enterprise == null
       || !slot.getEnterprise().getId().equals(enterprise.getId())) {
       throw new IllegalArgumentException("Forbidden");
     }
@@ -118,17 +148,22 @@ public class ReservationService {
     );
 
     Reservation r = Reservation.builder()
-      .company(enterprise.getCompanyName())
-      .machine(slot.getMachine())
-      .date(slot.getDate())
-      .startHour(slot.getStartHour())
-      .hours(slot.getEndHour() - slot.getStartHour())
-      .solar(slot.getSolar())
+      .company(firstNonBlank(req == null ? null : req.getCompanyName(), enterprise.getCompanyName()))
+      .machine(firstNonBlank(req == null ? null : req.getMachine(), slot.getMachine()))
+      .date(firstNonNull(req == null ? null : req.getFromDate(), slot.getDate()))
+      .startHour(firstNonNull(req == null ? null : req.getStartHour(), slot.getStartHour()))
+      .hours(firstNonNull(req == null ? null : req.getHours(), slot.getEndHour() - slot.getStartHour()))
+      .solar(firstNonNull(req == null ? null : req.getSolar(), slot.getSolar()))
       .status(ReservationStatus.CONFIRMED) // ✅ FIXED enum (lowercase)
       .slot(slot)
       .enterprise(enterprise)
       .deleted(false)
       .build();
+
+    r.setStatus(req != null && req.getStatus() != null && !req.getStatus().isBlank()
+      ? ReservationStatus.fromJson(req.getStatus())
+      : ReservationStatus.PENDING);
+    r.setCo2Saved(req == null ? null : req.getCo2Saved());
 
     slot.setStatus(SlotStatus.booked);
     slot.setReservation(r);
@@ -144,7 +179,7 @@ public class ReservationService {
   // =========================================================
 
   @Transactional
-  public Reservation update(Long id, Authentication auth, Reservation updated) {
+  public Reservation update(Long id, Authentication auth, ReservationRequest updated) {
 
     Reservation r = reservationRepository.findById(id)
       .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
@@ -156,8 +191,37 @@ public class ReservationService {
       throw new IllegalArgumentException("Cannot edit a cancelled reservation");
     }
 
-    if (updated.getStatus() != null) {
-      r.setStatus(updated.getStatus());
+    if (updated.getCompanyName() != null && !updated.getCompanyName().isBlank()) {
+      r.setCompany(updated.getCompanyName());
+    }
+
+    if (updated.getMachine() != null && !updated.getMachine().isBlank()) {
+      r.setMachine(updated.getMachine());
+    }
+
+    if (updated.getFromDate() != null) {
+      r.setDate(updated.getFromDate());
+    }
+
+    if (updated.getStartHour() != null) {
+      r.setStartHour(updated.getStartHour());
+    }
+
+    if (updated.getHours() != null) {
+      r.setHours(updated.getHours());
+    }
+
+    if (updated.getSolar() != null) {
+      r.setSolar(updated.getSolar());
+    }
+
+    if (updated.getStatus() != null && !updated.getStatus().isBlank()) {
+      ReservationStatus nextStatus = ReservationStatus.fromJson(updated.getStatus());
+      r.setStatus(nextStatus);
+      if (nextStatus == ReservationStatus.CANCELLED) {
+        r.setDeleted(true);
+        releaseSlot(r);
+      }
     }
 
     if (updated.getCo2Saved() != null) {
@@ -204,6 +268,18 @@ public class ReservationService {
     return aiService.predictReservationPriority(date, hours, slots);
   }
 
+  @Transactional(readOnly = true)
+  public boolean hasConflict(Reservation reservation) {
+    if (reservation == null || reservation.getDate() == null) {
+      return false;
+    }
+
+    return reservationRepository.findAllActive().stream()
+      .filter(existing -> !existing.getId().equals(reservation.getId()))
+      .filter(existing -> existing.getStatus() != ReservationStatus.CANCELLED)
+      .anyMatch(existing -> overlaps(existing, reservation));
+  }
+
   // =========================================================
   // SOFT DELETE
   // =========================================================
@@ -222,13 +298,7 @@ public class ReservationService {
       ? "No reason provided"
       : reason);
 
-    // free slot
-    if (r.getSlot() != null) {
-      ReservationSlot slot = r.getSlot();
-      slot.setStatus(SlotStatus.open);
-      slot.setReservation(null);
-      slotRepository.save(slot);
-    }
+    releaseSlot(r);
 
     return reservationRepository.save(r);
   }
@@ -246,5 +316,66 @@ public class ReservationService {
     assertCanRead(securityUserHelper.requireUser(auth), r);
 
     reservationRepository.delete(r);
+  }
+
+  private Enterprise resolveEnterprise(Authentication auth, Long requestedEnterpriseId) {
+    User u = securityUserHelper.requireUser(auth);
+
+    if (u.getRole() != Role.ROLE_ADMIN) {
+      return u.getEnterprise();
+    }
+
+    if (requestedEnterpriseId == null) {
+      return u.getEnterprise();
+    }
+
+    return enterpriseRepository.findById(requestedEnterpriseId)
+      .orElseThrow(() -> new IllegalArgumentException("Enterprise not found"));
+  }
+
+  private void releaseSlot(Reservation reservation) {
+    if (reservation.getSlot() != null) {
+      ReservationSlot slot = reservation.getSlot();
+      slot.setStatus(SlotStatus.open);
+      slot.setReservation(null);
+      slotRepository.save(slot);
+    }
+  }
+
+  private boolean overlaps(Reservation left, Reservation right) {
+    if (!equalsNullable(left.getDate(), right.getDate())) {
+      return false;
+    }
+
+    if (left.getSlot() != null && right.getSlot() != null
+      && equalsNullable(left.getSlot().getId(), right.getSlot().getId())) {
+      return true;
+    }
+
+    if (!equalsNullable(left.getMachine(), right.getMachine())) {
+      return false;
+    }
+
+    int leftStart = firstNonNull(left.getStartHour(), 0);
+    int leftEnd = leftStart + firstNonNull(left.getHours(), 0);
+    int rightStart = firstNonNull(right.getStartHour(), 0);
+    int rightEnd = rightStart + firstNonNull(right.getHours(), 0);
+
+    return leftStart < rightEnd && rightStart < leftEnd;
+  }
+
+  private <T> T firstNonNull(T left, T right) {
+    return left != null ? left : right;
+  }
+
+  private String firstNonBlank(String left, String right) {
+    if (left != null && !left.isBlank()) {
+      return left;
+    }
+    return right;
+  }
+
+  private boolean equalsNullable(Object left, Object right) {
+    return left == null ? right == null : left.equals(right);
   }
 }

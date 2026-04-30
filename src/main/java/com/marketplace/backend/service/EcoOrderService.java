@@ -78,6 +78,8 @@ public class EcoOrderService {
         req.getGrade() == null || req.getGrade().isBlank()
             ? aiGrade(req.getCo2Saved(), null, null)
             : parseGrade(req.getGrade());
+    BigDecimal co2Saved =
+        req.getCo2Saved() != null ? req.getCo2Saved() : estimateCo2Saved(req.getQtyKg(), grade);
 
     EcoOrder o =
         EcoOrder.builder()
@@ -90,7 +92,7 @@ public class EcoOrderService {
             .orderDate(req.getOrderDate() == null ? LocalDate.now() : req.getOrderDate())
             .status(status)
             .grade(grade)
-            .co2Saved(req.getCo2Saved())
+            .co2Saved(co2Saved)
             .waterSaved(req.getWaterSaved())
             .wasteAvoided(req.getWasteAvoided())
             .enterprise(e)
@@ -137,12 +139,17 @@ public class EcoOrderService {
     }
     if (req.getGrade() != null) {
       o.setGrade(parseGrade(req.getGrade()));
-    } else {
-      o.setGrade(aiGrade(req.getCo2Saved(), null, null));
     }
     if (req.getCo2Saved() != null) o.setCo2Saved(req.getCo2Saved());
     if (req.getWaterSaved() != null) o.setWaterSaved(req.getWaterSaved());
     if (req.getWasteAvoided() != null) o.setWasteAvoided(req.getWasteAvoided());
+
+    if (req.getGrade() == null || req.getGrade().isBlank()) {
+      o.setGrade(aiGrade(o.getCo2Saved(), null, null));
+    }
+    if (o.getCo2Saved() == null) {
+      o.setCo2Saved(estimateCo2Saved(o.getQtyKg(), o.getGrade()));
+    }
 
     return orderRepository.save(o);
   }
@@ -301,6 +308,23 @@ public class EcoOrderService {
         .map(EcoOrder::getCo2Saved)
         .filter(java.util.Objects::nonNull)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  public double ecoScore(EcoOrder order) {
+    if (order == null) {
+      return 0.0d;
+    }
+    return aiService.computeEcoScore(order.getCo2Saved(), null, null).score();
+  }
+
+  public BigDecimal pricingImpact(EcoOrder order) {
+    if (order == null || order.getQtyKg() == null) {
+      return BigDecimal.ZERO;
+    }
+    BigDecimal base = order.getQtyKg().multiply(BigDecimal.valueOf(0.35d));
+    BigDecimal ecoBonus =
+        BigDecimal.valueOf(ecoScore(order) / 100.0d).multiply(BigDecimal.valueOf(25.0d));
+    return base.add(ecoBonus).setScale(2, java.math.RoundingMode.HALF_UP);
   }
 
   private EcoGrade aiGrade(BigDecimal co2Saved, Boolean solar, Integer durationHours) {
