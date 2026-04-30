@@ -39,9 +39,12 @@ public class Reservation {
   @Column(name = "start_hour", nullable = false)
   private Integer startHour;
 
-  // MySQL column name is `hours_count` (schema migration).
-  @Column(name = "hours_count", nullable = false)
+  @Column(name = "hours", nullable = false)
   private Integer hours;
+
+  @Column(name = "hours_count", nullable = false)
+  @JsonIgnore
+  private Integer hoursCountCompat;
 
   @Column(name = "solar", nullable = false)
   private Boolean solar;
@@ -92,8 +95,28 @@ public class Reservation {
 
   @PrePersist
   public void prePersist() {
+    syncHoursColumns();
     if (createdAt == null) createdAt = LocalDateTime.now();
     if (deleted == null) deleted = false;
+  }
+
+  @PreUpdate
+  public void preUpdate() {
+    syncHoursColumns();
+  }
+
+  @PostLoad
+  public void postLoad() {
+    if (hours == null) {
+      hours = hoursCountCompat;
+    }
+  }
+
+  private void syncHoursColumns() {
+    if (hours == null) {
+      hours = hoursCountCompat;
+    }
+    hoursCountCompat = hours;
   }
 
   // =========================================================

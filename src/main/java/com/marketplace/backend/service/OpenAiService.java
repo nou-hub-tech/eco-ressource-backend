@@ -11,11 +11,14 @@ import java.util.*;
 @Service
 public class OpenAiService {
 
-  @Value("${openai.api.key}")
-  private String apiKey;
+  @Value("${huggingface.api.token:}")
+  private String apiToken;
 
-  @Value("${openai.api.url}")
+  @Value("${huggingface.api.url:https://router.huggingface.co/v1/chat/completions}")
   private String apiUrl;
+
+  @Value("${huggingface.model:Qwen/Qwen2.5-7B-Instruct-1M}")
+  private String model;
 
   private final RestTemplate restTemplate;
 
@@ -28,44 +31,64 @@ public class OpenAiService {
   // =========================================================
   public String ask(String prompt) {
 
+    // 🔍 DEBUG (remove later if needed)
+    String token = resolveApiToken();
+    if (token == null || token.isBlank()) {
+      return "{\"bestSlotId\":null,\"reason\":\"AI token missing, using backend-only scoring.\",\"confidence\":0}";
+    }
+
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    headers.setBearerAuth(apiKey);
+    headers.setBearerAuth(token);
 
     Map<String, Object> body = new HashMap<>();
-    body.put("model", "gpt-4o-mini");
+    body.put("model", resolveModel());
 
     List<Map<String, String>> messages = List.of(
+      Map.of("role", "system", "content", "You are a strict JSON API. Respond with JSON only."),
       Map.of("role", "user", "content", prompt)
     );
 
     body.put("messages", messages);
     body.put("temperature", 0.2);
     body.put("max_tokens", 300);
+    body.put("response_format", Map.of("type", "json_object"));
 
-    HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+    HttpEntity<Map<String, Object>> request =
+      new HttpEntity<>(body, headers);
 
-    ResponseEntity<Map> response =
-      restTemplate.postForEntity(apiUrl, request, Map.class);
+    try {
+      ResponseEntity<Map> response =
+        restTemplate.postForEntity(apiUrl, request, Map.class);
 
-    // 🔥 SAFE extraction
-    if (response.getBody() == null) {
-      throw new RuntimeException("Empty response from OpenAI");
+      if (response.getBody() == null) {
+        throw new RuntimeException("Empty response from AI provider");
+      }
+
+      // 🔍 DEBUG
+
+      List<?> choices = (List<?>) response.getBody().get("choices");
+
+      if (choices == null || choices.isEmpty()) {
+        throw new RuntimeException("No choices returned from AI provider");
+      }
+
+      Map<?, ?> firstChoice = (Map<?, ?>) choices.get(0);
+      Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");
+
+      if (message == null || message.get("content") == null) {
+        throw new RuntimeException("Invalid AI response structure");
+      }
+
+      return message.get("content").toString();
+
+    } catch (Exception e) {
+      return "{\"bestSlotId\":null,\"reason\":\"AI provider unavailable, using backend-only scoring.\",\"confidence\":0}";
     }
-
-    List<?> choices = (List<?>) response.getBody().get("choices");
-    if (choices == null || choices.isEmpty()) {
-      throw new RuntimeException("No choices returned from OpenAI");
-    }
-
-    Map<?, ?> firstChoice = (Map<?, ?>) choices.get(0);
-    Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");
-
-    return message.get("content").toString();
   }
 
   // =========================================================
-  // 🧠 OPTIMIZED PROMPT (FOR SCHEDULING)
+  // 🧠 PROMPT BUILDER
   // =========================================================
   public String buildSchedulingPrompt(List<ReservationSlot> slots) {
 
@@ -104,5 +127,38 @@ Slots:
     }
 
     return sb.toString();
+  }
+
+  private String resolveApiToken() {
+    for (String envName : List.of("HF_TOKEN", "HUGGINGFACE_API_TOKEN", "HUGGING_FACE_HUB_TOKEN")) {
+      String envValue = System.getenv(envName);
+      if (envValue != null && !envValue.isBlank()) {
+        return envValue;
+      }
+    }
+
+    if (apiToken == null || apiToken.isBlank()) {
+      return null;
+    }
+
+    String normalized = apiToken.trim().toLowerCase();
+    if (List.of("test", "changeme", "your-api-key").contains(normalized)) {
+      return null;
+    }
+
+    return apiToken;
+  }
+
+  private String resolveModel() {
+    String envModel = System.getenv("HF_MODEL");
+    if (envModel != null && !envModel.isBlank()) {
+      return envModel;
+    }
+
+    if (model == null || model.isBlank()) {
+      return "Qwen/Qwen2.5-7B-Instruct-1M";
+    }
+
+    return model;
   }
 }

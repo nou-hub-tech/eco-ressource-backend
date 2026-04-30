@@ -48,7 +48,7 @@ public class AiController {
 
       if (topSlots.isEmpty()) {
         return ResponseEntity.ok(Map.of(
-          "message", "No available slots"
+          "insights", List.of()
         ));
       }
 
@@ -100,7 +100,19 @@ public class AiController {
         }
       }
 
-      return ResponseEntity.ok(aiResult);
+      return ResponseEntity.ok(Map.of(
+        "insights", List.of(
+          Map.of(
+            "title", "Best Slot Recommendation",
+            "description", aiResult.getOrDefault("reason", "No reason provided"),
+            "confidence", aiResult.getOrDefault("confidence", 0),
+            "bestSlotId", aiResult.get("bestSlotId"),
+            "slot", aiResult.get("slot"),
+            "backendScore", aiResult.get("backendScore"),
+            "explanation", aiResult.get("explanation")
+          )
+        )
+      ));
 
     } catch (Exception e) {
 

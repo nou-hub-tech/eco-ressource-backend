@@ -24,15 +24,16 @@ public class AiService {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final HttpClient httpClient =
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-  private final String configuredApiKey;
+  private final String configuredApiToken;
   private final String configuredApiUrl;
   private final String configuredModel;
 
   public AiService(
-      @Value("${openai.api.key:}") String configuredApiKey,
-      @Value("${openai.api.url:https://api.openai.com/v1/chat/completions}") String configuredApiUrl,
-      @Value("${openai.model:gpt-4o-mini}") String configuredModel) {
-    this.configuredApiKey = configuredApiKey;
+      @Value("${huggingface.api.token:}") String configuredApiToken,
+      @Value("${huggingface.api.url:https://router.huggingface.co/v1/chat/completions}")
+          String configuredApiUrl,
+      @Value("${huggingface.model:Qwen/Qwen2.5-7B-Instruct-1M}") String configuredModel) {
+    this.configuredApiToken = configuredApiToken;
     this.configuredApiUrl = configuredApiUrl;
     this.configuredModel = configuredModel;
   }
@@ -123,18 +124,14 @@ public class AiService {
   }
 
   private JsonNode callModel(String prompt) throws IOException, InterruptedException {
-    String apiKey =
-        configuredApiKey != null && !configuredApiKey.isBlank()
-            ? configuredApiKey
-            : System.getenv("OPENAI_API_KEY");
-    if (apiKey == null || apiKey.isBlank()) {
-      throw new IOException("OPENAI_API_KEY is missing");
+    String apiToken = resolveApiToken();
+    if (apiToken == null || apiToken.isBlank()) {
+      throw new IOException("HF_TOKEN is missing");
     }
 
     Map<String, Object> body = Map.of(
         "model",
-            System.getenv().getOrDefault(
-                "OPENAI_MODEL", configuredModel == null || configuredModel.isBlank() ? "gpt-4o-mini" : configuredModel),
+            resolveModel(),
         "messages", List.of(
             Map.of("role", "system", "content", "You are a strict JSON API. Respond with JSON only."),
             Map.of("role", "user", "content", prompt)
@@ -145,14 +142,9 @@ public class AiService {
     HttpRequest request =
         HttpRequest.newBuilder()
             .uri(
-                URI.create(
-                    System.getenv().getOrDefault(
-                        "OPENAI_API_URL",
-                        configuredApiUrl == null || configuredApiUrl.isBlank()
-                            ? "https://api.openai.com/v1/chat/completions"
-                            : configuredApiUrl)))
+                URI.create(resolveApiUrl()))
             .timeout(Duration.ofSeconds(30))
-            .header("Authorization", "Bearer " + apiKey)
+            .header("Authorization", "Bearer " + apiToken)
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
             .build();
@@ -167,6 +159,48 @@ public class AiService {
       throw new IOException("AI API returned empty content");
     }
     return objectMapper.readTree(content);
+  }
+
+  private String resolveApiToken() {
+    for (String envName : List.of("HF_TOKEN", "HUGGINGFACE_API_TOKEN", "HUGGING_FACE_HUB_TOKEN")) {
+      String envValue = System.getenv(envName);
+      if (envValue != null && !envValue.isBlank()) {
+        return envValue;
+      }
+    }
+
+    if (configuredApiToken == null || configuredApiToken.isBlank()) {
+      return null;
+    }
+
+    String normalized = configuredApiToken.trim().toLowerCase();
+    if (List.of("test", "changeme", "your-api-key").contains(normalized)) {
+      return null;
+    }
+
+    return configuredApiToken;
+  }
+
+  private String resolveApiUrl() {
+    String envApiUrl = System.getenv("HF_API_URL");
+    if (envApiUrl != null && !envApiUrl.isBlank()) {
+      return envApiUrl;
+    }
+    if (configuredApiUrl == null || configuredApiUrl.isBlank()) {
+      return "https://router.huggingface.co/v1/chat/completions";
+    }
+    return configuredApiUrl;
+  }
+
+  private String resolveModel() {
+    String envModel = System.getenv("HF_MODEL");
+    if (envModel != null && !envModel.isBlank()) {
+      return envModel;
+    }
+    if (configuredModel == null || configuredModel.isBlank()) {
+      return "Qwen/Qwen2.5-7B-Instruct-1M";
+    }
+    return configuredModel;
   }
 
   private String summarizeSlots(List<ReservationSlot> slots) {

@@ -45,15 +45,15 @@ public class ReservationSlotService {
         : slotRepository.findAllActive();
     }
 
-    if (u.getEnterprise() == null) {
-      return List.of();
+    if (includeDeleted) {
+      return slotRepository.findAll().stream()
+        .filter(slot -> slot.getEnterprise() != null)
+        .toList();
     }
 
-    Long eid = u.getEnterprise().getId();
-
-    return includeDeleted
-      ? slotRepository.findByEnterpriseId(eid)
-      : slotRepository.findActiveByEnterpriseId(eid);
+    return slotRepository.findAllActive().stream()
+      .filter(slot -> slot.getEnterprise() != null)
+      .toList();
   }
 
   @Transactional(readOnly = true)
