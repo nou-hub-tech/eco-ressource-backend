@@ -13,7 +13,7 @@ import java.util.*;
 @RequestMapping("/api/ai")
 public class AIController {
 
-    @Value("${groq.api.key}")
+    @Value("${groq.api.key:}")
     private String groqApiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -23,6 +23,11 @@ public class AIController {
             @RequestBody AIDescriptionRequest request) {
 
         String prompt = buildPrompt(request);
+
+        if (groqApiKey == null || groqApiKey.isBlank()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("error", "No Groq API key configured."));
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

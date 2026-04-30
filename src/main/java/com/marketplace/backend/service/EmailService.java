@@ -29,6 +29,25 @@ public class EmailService {
     @Value("${app.mail.from:noreply@eco-ressource.com}")
     private String fromAddress;
 
+    public void sendHtmlEmail(String recipientEmail, String subject, String htmlBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromAddress);
+            helper.setTo(recipientEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+
+            mailSender.send(message);
+
+            log.info("[EMAIL] Notification HTML envoyee a {}", recipientEmail);
+        } catch (MessagingException e) {
+            log.error("[EMAIL] Erreur envoi email HTML vers {} : {}",
+                    recipientEmail, e.getMessage(), e);
+        }
+    }
+
     /**
      * Envoie un email HTML au responsable financier de l'entreprise
      * informant que l'escrow a été libéré.
