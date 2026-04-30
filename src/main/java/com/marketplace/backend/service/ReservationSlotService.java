@@ -43,7 +43,7 @@ public class ReservationSlotService {
     }
 
     if (u.getEnterprise() == null) {
-      throw new IllegalArgumentException("Enterprise profile required");
+      return List.of();
     }
 
     Long eid = u.getEnterprise().getId();
@@ -70,7 +70,7 @@ public class ReservationSlotService {
     }
 
     if (u.getEnterprise() == null) {
-      throw new IllegalArgumentException("Enterprise profile required");
+      return List.of();
     }
 
     Long eid = u.getEnterprise().getId();
@@ -166,17 +166,15 @@ public class ReservationSlotService {
       throw new IllegalArgumentException("Cannot edit a deleted slot");
     }
 
-    if (req.getEnterpriseId() != null) {
+    if (u.getRole() == Role.ROLE_ADMIN && req.getEnterpriseId() != null) {
       Enterprise e = enterpriseRepository.findById(req.getEnterpriseId())
         .orElseThrow(() -> new IllegalArgumentException("Enterprise not found"));
-
-      if (u.getRole() != Role.ROLE_ADMIN &&
-        (u.getEnterprise() == null ||
-          !u.getEnterprise().getId().equals(e.getId()))) {
+      s.setEnterprise(e);
+    } else if (u.getRole() != Role.ROLE_ADMIN) {
+      if (u.getEnterprise() == null) {
         throw new IllegalArgumentException("Forbidden");
       }
-
-      s.setEnterprise(e);
+      s.setEnterprise(u.getEnterprise());
     }
 
     s.setMachine(req.getMachine());
@@ -265,13 +263,11 @@ public class ReservationSlotService {
     User u = securityUserHelper.requireUser(auth);
 
     if (u.getRole() != Role.ROLE_ADMIN) {
-      Enterprise enterprise = securityUserHelper.requireEnterpriseStrict(auth);
-
-      if (enterpriseId != null && !enterprise.getId().equals(enterpriseId)) {
+      if (u.getEnterprise() == null) {
         throw new IllegalArgumentException("Forbidden");
       }
 
-      return enterprise;
+      return u.getEnterprise();
     }
 
     if (enterpriseId != null) {

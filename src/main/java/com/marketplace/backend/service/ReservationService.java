@@ -42,7 +42,7 @@ public class ReservationService {
     }
 
     if (u.getEnterprise() == null) {
-      throw new IllegalArgumentException("Enterprise profile required");
+      return List.of();
     }
 
     Long eid = u.getEnterprise().getId();
@@ -95,7 +95,13 @@ public class ReservationService {
       throw new IllegalArgumentException("Slot is blocked");
     }
 
-    Enterprise enterprise = securityUserHelper.requireEnterpriseStrict(auth);
+    User u = securityUserHelper.requireUser(auth);
+
+    if (u.getEnterprise() == null) {
+      throw new IllegalArgumentException("Forbidden");
+    }
+
+    Enterprise enterprise = u.getEnterprise();
 
     if (slot.getEnterprise() == null
       || !slot.getEnterprise().getId().equals(enterprise.getId())) {

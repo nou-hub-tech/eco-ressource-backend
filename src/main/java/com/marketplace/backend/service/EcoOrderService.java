@@ -43,7 +43,7 @@ public class EcoOrderService {
           : orderRepository.findAllActive();
     }
     if (u.getEnterprise() == null) {
-      throw new IllegalArgumentException("Enterprise profile required");
+      return List.of();
     }
     Long eid = u.getEnterprise().getId();
     return includeDeleted
@@ -110,17 +110,17 @@ public class EcoOrderService {
       throw new IllegalArgumentException("Cannot edit a cancelled order");
     }
 
-    if (req.getEnterpriseId() != null) {
+    if (u.getRole() == Role.ROLE_ADMIN && req.getEnterpriseId() != null) {
       Enterprise e =
           enterpriseRepository
               .findById(req.getEnterpriseId())
               .orElseThrow(() -> new IllegalArgumentException("Enterprise not found"));
-      if (u.getRole() != Role.ROLE_ADMIN
-          && (u.getEnterprise() == null
-              || !u.getEnterprise().getId().equals(e.getId()))) {
+      o.setEnterprise(e);
+    } else if (u.getRole() != Role.ROLE_ADMIN) {
+      if (u.getEnterprise() == null) {
         throw new IllegalArgumentException("Forbidden");
       }
-      o.setEnterprise(e);
+      o.setEnterprise(u.getEnterprise());
     }
 
     o.setCompanyName(req.getCompanyName());
@@ -196,11 +196,10 @@ public class EcoOrderService {
   private Enterprise resolveEnterprise(Authentication auth, Long enterpriseId) {
     User u = securityUserHelper.requireUser(auth);
     if (u.getRole() != Role.ROLE_ADMIN) {
-      Enterprise enterprise = securityUserHelper.requireEnterpriseStrict(auth);
-      if (enterpriseId != null && !enterprise.getId().equals(enterpriseId)) {
+      if (u.getEnterprise() == null) {
         throw new IllegalArgumentException("Forbidden");
       }
-      return enterprise;
+      return u.getEnterprise();
     }
     if (enterpriseId != null) {
       Enterprise e =
