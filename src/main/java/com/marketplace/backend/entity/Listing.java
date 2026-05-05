@@ -24,9 +24,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "listings")
-
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-
 @Getter
 @Setter
 @NoArgsConstructor

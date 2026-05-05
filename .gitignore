@@ -1,4 +1,3 @@
-
 .vscode/settings.json
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -32,16 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
-
 .DS_Store
+Thumbs.db
 
-target/ 
-uploads/ 
-application.properties 
-.idea/ 
-*.iml 
-*.log 
-.DS_Store 
-Thumbs.db 
->>>>>>> origin/gestion_product_backend_v2
+# Local docs / specs (non versionnés)
+FRONTEND-ANGULAR-SPEC-MODULE-ANNONCES.md
+guide code/
 
+uploads/
+application.properties
+*.log
+
+.env

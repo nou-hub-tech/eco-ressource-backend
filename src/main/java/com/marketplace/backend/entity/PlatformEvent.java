@@ -1,8 +1,6 @@
 package com.marketplace.backend.entity;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import com.marketplace.backend.entity.enums.EventStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,7 +22,6 @@ import lombok.Setter;
 @Entity
 @Table(name = "platform_events")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -43,6 +40,11 @@ public class PlatformEvent {
   private LocalDate eventDate;
 
   @Column(nullable = false)
+  private Double latitude;
+  @Column(nullable = false)
+  private Double longitude;
+
+  @Column(nullable = false)
   private String location;
 
   @Column(nullable = false)
@@ -54,6 +56,9 @@ public class PlatformEvent {
 
   @Column(nullable = false)
   private String typeLabel;
+
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
   @Column(nullable = false)
   private LocalDateTime createdAt;

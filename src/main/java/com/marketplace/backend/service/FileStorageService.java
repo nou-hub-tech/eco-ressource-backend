@@ -12,8 +12,29 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
+    public static final long MAX_LISTING_IMAGE_BYTES = 5L * 1024 * 1024;
+
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
+
+    /**
+     * Enregistre une image pour une annonce (multipart) : type {@code image/*}, taille plafonnée (5 Mo).
+     *
+     * @return nom de fichier relatif, à exposer via {@code GET /files/{filename}}
+     */
+    public String storeListingImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Fichier vide");
+        }
+        if (file.getSize() > MAX_LISTING_IMAGE_BYTES) {
+            throw new IllegalArgumentException("Image trop volumineuse (max 5 Mo)");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new IllegalArgumentException("Seules les images (image/*) sont acceptées");
+        }
+        return storeFile(file);
+    }
 
     /**
      * Sauvegarde le fichier et retourne son nom unique.
@@ -67,4 +88,4 @@ public class FileStorageService {
         System.out.println("[UPLOAD] ⚠️ Fallback vers dossier temp : " + tempDir.getAbsolutePath());
         return tempDir;
     }
-}
+}

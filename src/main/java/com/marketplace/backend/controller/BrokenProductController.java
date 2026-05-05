@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/broken-product")
-@CrossOrigin(origins = "http://localhost:4200")
 public class BrokenProductController {
 
     @Value("${huggingface.api.key}")

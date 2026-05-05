@@ -1,10 +1,7 @@
 package com.marketplace.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,9 +24,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "enterprises")
-
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,14 +36,9 @@ public class Enterprise {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false, unique = true)
   @JsonIgnore
-
-
-
-
   private User user;
 
   @Column(nullable = false)
@@ -70,15 +60,8 @@ public class Enterprise {
 
   @OneToMany(mappedBy = "enterprise")
   @Builder.Default
-
   @JsonIgnore
   private List<Listing> listings = new ArrayList<>();
-
-  @OneToMany(mappedBy = "enterprise")
-  @Builder.Default
-  @JsonIgnore
-  private List<StockItem> stockItems = new ArrayList<>();
-
 
   @PrePersist
   public void prePersist() {

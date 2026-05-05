@@ -14,9 +14,14 @@ public class PlatformEventRequest {
 
   @NotBlank private String location;
 
+  @NotNull private Double latitude;
+  @NotNull private Double longitude;
+
   @NotNull private Integer participants;
 
   @NotBlank private String status;
 
   @NotBlank private String typeLabel;
+
+  private String description;
 }

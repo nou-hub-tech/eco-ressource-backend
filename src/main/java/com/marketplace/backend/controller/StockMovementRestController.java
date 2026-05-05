@@ -8,7 +8,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/stock-movement")
-@CrossOrigin(origins = "http://localhost:4200")
 public class StockMovementRestController {
 
     private final IStockMovementService movementService;

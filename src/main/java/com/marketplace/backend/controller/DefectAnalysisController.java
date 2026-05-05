@@ -17,7 +17,6 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/enterprise/reclamations")
-@CrossOrigin(origins = "http://localhost:4200")
 public class DefectAnalysisController {
 
     @Value("${huggingface.api.key:}")

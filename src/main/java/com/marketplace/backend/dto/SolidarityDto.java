@@ -15,7 +15,7 @@ public class SolidarityDto {
   private String name;
   private String mission;
   private int members;
-  private int donations;
+  private double donations;
   private String status;
   private String ai;
 }

@@ -37,13 +37,13 @@ public class InvoiceChatService {
     private final EnterpriseContextHelper enterpriseContext;
     private final RestTemplate restTemplate;
 
-    @Value("${groq.api.key}")
+    @Value("${groq.api.key:}")
     private String groqApiKey;
 
-    @Value("${groq.api.url}")
+    @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
     private String groqApiUrl;
 
-    @Value("${groq.model}")
+    @Value("${groq.model:llama3-8b-8192}")
     private String groqModel;
 
     // ═══════════════════════════════════════════════════════════
