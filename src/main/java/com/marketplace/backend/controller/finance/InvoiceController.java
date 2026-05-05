@@ -34,7 +34,6 @@ public class InvoiceController {
     private final ClientSolvabilityService solvabilityService;
     private final InvoiceChatService chatService;
 
-    // Repos pour le filtrage par entreprise
     private final UserRepository userRepository;
     private final EnterpriseRepository enterpriseRepository;
     private final InvoiceRepository invoiceRepository;
@@ -43,57 +42,96 @@ public class InvoiceController {
     //  CRUD standard
     // ═══════════════════════════════════════════════════════════
 
+    /**
+     * POST /api/invoices/add
+     * Sauvegarde directement via invoiceRepository (bypass InvoiceServiceImpl)
+     * pour éviter les problèmes @Transactional liés à l'escrow automatique.
+     */
     @PostMapping("/add")
-    public Invoice addInvoice(@RequestBody Invoice invoice) {
-        String companyName = getCurrentCompanyName();
-        
-        // Auto-detection du type si non fourni
-        if (invoice.getInvoiceType() == null && companyName != null) {
-            if (companyName.equalsIgnoreCase(invoice.getSellerName())) {
+    public ResponseEntity<?> addInvoice(@RequestBody Invoice invoice) {
+        try {
+            String companyName = getCurrentCompanyName();
+
+            // 1. Auto-détection du type si non fourni
+            if (invoice.getInvoiceType() == null && companyName != null) {
+                if (companyName.equalsIgnoreCase(invoice.getSellerName())) {
+                    invoice.setInvoiceType(InvoiceType.VENTE);
+                } else if (companyName.equalsIgnoreCase(invoice.getClientName())) {
+                    invoice.setInvoiceType(InvoiceType.ACHAT);
+                }
+            }
+            if (invoice.getInvoiceType() == null) {
                 invoice.setInvoiceType(InvoiceType.VENTE);
-            } else if (companyName.equalsIgnoreCase(invoice.getClientName())) {
-                invoice.setInvoiceType(InvoiceType.ACHAT);
             }
-        }
 
-        // Forcer l'association à l'entreprise connectée pour garantir la visibilité
-        if (companyName != null) {
-            if (invoice.getInvoiceType() == InvoiceType.VENTE) {
-                invoice.setSellerName(companyName);
-            } else if (invoice.getInvoiceType() == InvoiceType.ACHAT) {
-                invoice.setClientName(companyName);
+            // 2. Forcer l'association à l'entreprise connectée
+            if (companyName != null) {
+                if (invoice.getInvoiceType() == InvoiceType.VENTE) {
+                    invoice.setSellerName(companyName);
+                } else {
+                    invoice.setClientName(companyName);
+                }
             }
-        }
 
-        // Auto-génération du numéro si vide
-        if (invoice.getInvoiceNumber() == null || invoice.getInvoiceNumber().isBlank()) {
+            // 3. Toujours régénérer le numéro côté backend (jamais de doublon)
             invoice.setInvoiceNumber(generateNextNumber(invoice.getInvoiceType()));
-        }
 
-        return invoiceService.addInvoice(invoice);
+            // 4. Calculer le montant TTC
+            if (invoice.getAmountHT() != null && invoice.getTva() != null) {
+                double ttc = invoice.getAmountHT() * (1.0 + invoice.getTva() / 100.0);
+                invoice.setAmountTTC(Math.round(ttc * 1000.0) / 1000.0);
+            }
+
+            // 5. Sauvegarder directement (pas de logique escrow ici)
+            Invoice saved = invoiceRepository.save(invoice);
+            log.info("[INVOICE] ✅ Créée : #{} id={}", saved.getInvoiceNumber(), saved.getId());
+            return ResponseEntity.ok(saved);
+
+        } catch (Exception e) {
+            log.error("[INVOICE] ❌ Erreur création : {}", e.getMessage(), e);
+            return ResponseEntity.status(500)
+                    .body(Map.of(
+                            "error", "Erreur création facture",
+                            "detail", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
+                    ));
+        }
     }
 
     /**
-     * 🔢 Prochain numéro de facture disponible : VTE-2026-001 ou ACH-2026-001
      * GET /api/invoices/next-number/{type}
+     * Prochain numéro de facture disponible : VTE-2026-001 ou ACH-2026-001
      */
     @GetMapping("/next-number/{type}")
     public ResponseEntity<Map<String, String>> getNextNumber(@PathVariable String type) {
-        InvoiceType invoiceType;
-        try { invoiceType = InvoiceType.valueOf(type.toUpperCase()); }
-        catch (Exception e) { return ResponseEntity.badRequest().build(); }
-        return ResponseEntity.ok(Map.of("number", generateNextNumber(invoiceType)));
+        try {
+            InvoiceType invoiceType = InvoiceType.valueOf(type.toUpperCase());
+            return ResponseEntity.ok(Map.of("number", generateNextNumber(invoiceType)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     private String generateNextNumber(InvoiceType type) {
-        if (type == null) return "";
-        String year  = String.valueOf(java.time.LocalDate.now().getYear());
+        if (type == null) type = InvoiceType.VENTE;
+        String year   = String.valueOf(java.time.LocalDate.now().getYear());
         String prefix = type == InvoiceType.VENTE ? "VTE" : "ACH";
-        long count = invoiceRepository.countByTypeAndYear(type, year);
-        return String.format("%s-%s-%03d", prefix, year, count + 1);
+        try {
+            long count = invoiceRepository.countByTypeAndYear(type, year);
+            String candidate = String.format("%s-%s-%03d", prefix, year, count + 1);
+            // Garantir l'unicité
+            int attempt = 0;
+            while (invoiceRepository.existsByInvoiceNumber(candidate) && attempt < 100) {
+                count++;
+                attempt++;
+                candidate = String.format("%s-%s-%03d", prefix, year, count + 1);
+            }
+            return candidate;
+        } catch (Exception e) {
+            log.warn("[INVOICE] generateNextNumber fallback timestamp : {}", e.getMessage());
+            return String.format("%s-%s-%d", prefix, year, System.currentTimeMillis() % 100000);
+        }
     }
 
-    /** Toutes les factures (admin uniquement) */
     @GetMapping("/all")
     public List<Invoice> getAll() {
         return invoiceService.retrieveAllInvoices();
@@ -105,8 +143,20 @@ public class InvoiceController {
     }
 
     @PutMapping("/update")
-    public Invoice update(@RequestBody Invoice invoice) {
-        return invoiceService.updateInvoice(invoice);
+    public ResponseEntity<?> update(@RequestBody Invoice invoice) {
+        try {
+            // Recalcul TTC
+            if (invoice.getAmountHT() != null && invoice.getTva() != null) {
+                double ttc = invoice.getAmountHT() * (1.0 + invoice.getTva() / 100.0);
+                invoice.setAmountTTC(Math.round(ttc * 1000.0) / 1000.0);
+            }
+            Invoice saved = invoiceRepository.save(invoice);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            log.error("[INVOICE] ❌ Erreur update #{} : {}", invoice.getId(), e.getMessage(), e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Erreur mise à jour", "detail", e.getMessage()));
+        }
     }
 
     @DeleteMapping("/delete/{id}")
@@ -120,10 +170,9 @@ public class InvoiceController {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  🏢 FILTRES PAR ENTREPRISE CONNECTEE
+    //  FILTRES PAR ENTREPRISE CONNECTEE
     // ═══════════════════════════════════════════════════════════
 
-    /** Toutes les factures de l'entreprise (acheteur OU vendeur) */
     @GetMapping("/my")
     public ResponseEntity<List<Invoice>> getMyInvoices() {
         String companyName = getCurrentCompanyName();
@@ -131,64 +180,52 @@ public class InvoiceController {
         return ResponseEntity.ok(invoiceRepository.findByEnterpriseCompanyName(companyName));
     }
 
-    /** 📤 Factures de VENTE : l'entreprise est vendeur → va encaisser */
     @GetMapping("/my/sales")
     public ResponseEntity<List<Invoice>> getMySalesInvoices() {
         String companyName = getCurrentCompanyName();
         if (companyName == null) return ResponseEntity.ok(List.of());
-        List<Invoice> sales = invoiceRepository.findSalesInvoices(companyName);
-        log.info("[INVOICES] {} factures de vente pour '{}'", sales.size(), companyName);
-        return ResponseEntity.ok(sales);
+        return ResponseEntity.ok(invoiceRepository.findSalesInvoices(companyName));
     }
 
-    /** 📥 Factures d'ACHAT : l'entreprise est acheteur → doit payer */
     @GetMapping("/my/purchases")
     public ResponseEntity<List<Invoice>> getMyPurchaseInvoices() {
         String companyName = getCurrentCompanyName();
         if (companyName == null) return ResponseEntity.ok(List.of());
-        List<Invoice> purchases = invoiceRepository.findPurchaseInvoices(companyName);
-        log.info("[INVOICES] {} factures d'achat pour '{}'", purchases.size(), companyName);
-        return ResponseEntity.ok(purchases);
+        return ResponseEntity.ok(invoiceRepository.findPurchaseInvoices(companyName));
     }
 
     // ═══════════════════════════════════════════════════════════
     //  IA
     // ═══════════════════════════════════════════════════════════
 
-    /** 🤖 Analyse IA risque simple — GET /api/invoices/ai-risk */
     @GetMapping("/ai-risk")
     public InvoiceRiskService.RiskReport getRiskReport() {
         return invoiceRiskService.generateRiskReport();
     }
 
-    /** 🏦 Solvabilité avancée — GET /api/invoices/ai-solvability */
     @GetMapping("/ai-solvability")
     public ClientSolvabilityService.SolvabilityReport getSolvabilityReport() {
         return solvabilityService.generateSolvabilityReport();
     }
 
-    /** 💬 Chatbot IA Financier — POST /api/invoices/chat */
     @PostMapping("/chat")
     public InvoiceChatService.ChatResponse chat(@RequestBody InvoiceChatService.ChatRequest request) {
         return chatService.chat(request.question());
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  Méthode utilitaire : companyName de l'utilisateur connecté
+    //  UTILITAIRE
     // ═══════════════════════════════════════════════════════════
 
     private String getCurrentCompanyName() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) return null;
-
             String email = auth.getName();
             User user = userRepository.findByEmailWithProfiles(email).orElse(null);
             if (user == null) return null;
-
             Enterprise enterprise = enterpriseRepository.findByUserId(user.getId()).orElse(null);
             if (enterprise == null) return null;
-
             return enterprise.getCompanyName();
         } catch (Exception e) {
             log.error("[INVOICES] Erreur récupération entreprise : {}", e.getMessage());

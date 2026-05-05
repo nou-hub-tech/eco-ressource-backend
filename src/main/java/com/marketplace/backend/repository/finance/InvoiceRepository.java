@@ -32,8 +32,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      * Utilisé pour générer le prochain numéro automatique.
      * ex: VTE-2026-001 / ACH-2026-001
      */
-    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.invoiceType = :type AND i.issueDate LIKE :year%")
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.invoiceType = :type AND i.issueDate LIKE CONCAT(:year, '%')")
     long countByTypeAndYear(@Param("type") InvoiceType type, @Param("year") String year);
+
+    /** 🔍 Vérifie si un numéro de facture existe déjà (pour garantir l'unicité) */
+    boolean existsByInvoiceNumber(String invoiceNumber);
 
     /** 🚚 Factures UNPAID liées à une livraison (pour le polling automatique) */
     @Query("SELECT i FROM Invoice i WHERE i.status = 'UNPAID' AND i.deliveryOrderId IS NOT NULL")
