@@ -61,11 +61,27 @@ public class EnterprisePortalController {
         .orElseThrow(() -> new RuntimeException("No enterprise linked to this user"));
   }
 
+  // ── Liste de toutes les entreprises (pour le dropdown factures) ────────────
+  @GetMapping("/list")
+  public ResponseEntity<List<Map<String, Object>>> listAll() {
+    List<Enterprise> all = enterpriseRepository.findAll();
+    List<Map<String, Object>> result = all.stream().map(e -> {
+      Map<String, Object> m = new HashMap<>();
+      m.put("id",          e.getId());
+      m.put("companyName", e.getCompanyName());
+      m.put("taxId",       e.getTaxId() != null ? e.getTaxId() : "");
+      m.put("sector",      e.getSector() != null ? e.getSector() : "");
+      return m;
+    }).toList();
+    return ResponseEntity.ok(result);
+  }
+
   @GetMapping("/products")
   public ResponseEntity<List<Product>> getMyProducts(Authentication auth) {
     Enterprise e = getEnterprise(auth);
     return ResponseEntity.ok(productRepository.findByEnterpriseId(e.getId()));
   }
+
 
   @GetMapping("/products/search")
   public ResponseEntity<List<Product>> searchMyProducts(
