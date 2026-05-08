@@ -29,7 +29,7 @@ public class EmailService {
     @Value("${app.mail.from:noreply@eco-ressource.com}")
     private String fromAddress;
 
-    public void sendHtmlEmail(String recipientEmail, String subject, String htmlBody) {
+    public boolean sendHtmlEmail(String recipientEmail, String subject, String htmlBody) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -42,9 +42,11 @@ public class EmailService {
             mailSender.send(message);
 
             log.info("[EMAIL] Notification HTML envoyee a {}", recipientEmail);
-        } catch (MessagingException e) {
+            return true;
+        } catch (Exception e) {
             log.error("[EMAIL] Erreur envoi email HTML vers {} : {}",
                     recipientEmail, e.getMessage(), e);
+            return false;
         }
     }
 

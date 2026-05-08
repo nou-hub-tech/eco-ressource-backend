@@ -1,0 +1,90 @@
+-- Premium reservation workspace module for XAMPP / MySQL (MariaDB compatible)
+-- Import this after the base eco_ressource_db schema if you want the new tables pre-created.
+
+CREATE TABLE IF NOT EXISTS `workspace_reservation_slots` (
+  `id` varchar(20) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `zone` varchar(255) NOT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `owner_company` varchar(255) DEFAULT NULL,
+  `portfolio` varchar(20) DEFAULT NULL,
+  `type` varchar(40) NOT NULL,
+  `coordinates_json` text NOT NULL,
+  `capacity` int NOT NULL,
+  `occupied` int NOT NULL,
+  `status` varchar(40) NOT NULL,
+  `equipment_json` text NOT NULL,
+  `heatmap_json` longtext NOT NULL,
+  `forecast_json` text NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `enterprise_id` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_workspace_slots_enterprise` (`enterprise_id`),
+  CONSTRAINT `fk_workspace_slots_enterprise`
+    FOREIGN KEY (`enterprise_id`) REFERENCES `enterprises` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `workspace_reservations` (
+  `id` varchar(20) NOT NULL,
+  `code` varchar(20) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `customer` varchar(255) NOT NULL,
+  `resource` varchar(255) NOT NULL,
+  `slot_id` varchar(20) NOT NULL,
+  `slot_name` varchar(255) NOT NULL,
+  `role` varchar(40) DEFAULT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `category` varchar(40) DEFAULT NULL,
+  `start_at` datetime(6) NOT NULL,
+  `end_at` datetime(6) NOT NULL,
+  `headcount` int NOT NULL,
+  `amount` decimal(14,2) NOT NULL,
+  `status` varchar(40) NOT NULL,
+  `notes` text DEFAULT NULL,
+  `voice_note_transcript` longtext DEFAULT NULL,
+  `contact_name` varchar(255) DEFAULT NULL,
+  `contact_email` varchar(255) DEFAULT NULL,
+  `contact_phone` varchar(255) DEFAULT NULL,
+  `notification_channel` varchar(20) DEFAULT NULL,
+  `confirmation_channel` varchar(20) DEFAULT NULL,
+  `confirmation_destination` varchar(255) DEFAULT NULL,
+  `confirmation_sent_at` datetime(6) DEFAULT NULL,
+  `confirmation_summary` text DEFAULT NULL,
+  `tags_json` text NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `enterprise_id` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_workspace_reservations_code` (`code`),
+  KEY `idx_workspace_reservations_enterprise` (`enterprise_id`),
+  KEY `idx_workspace_reservations_slot` (`slot_id`),
+  CONSTRAINT `fk_workspace_reservations_enterprise`
+    FOREIGN KEY (`enterprise_id`) REFERENCES `enterprises` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `workspace_orders` (
+  `id` varchar(20) NOT NULL,
+  `code` varchar(20) NOT NULL,
+  `invoice_number` varchar(20) NOT NULL,
+  `customer` varchar(255) NOT NULL,
+  `reservation_id` varchar(20) NOT NULL,
+  `slot_id` varchar(20) NOT NULL,
+  `role` varchar(40) DEFAULT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `amount` decimal(14,2) NOT NULL,
+  `tax` decimal(14,2) NOT NULL,
+  `total` decimal(14,2) NOT NULL,
+  `created_at` date NOT NULL,
+  `due_date` date NOT NULL,
+  `status` varchar(40) NOT NULL,
+  `payment_status` varchar(40) NOT NULL,
+  `items_json` longtext NOT NULL,
+  `created_timestamp` datetime(6) NOT NULL,
+  `enterprise_id` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_workspace_orders_code` (`code`),
+  UNIQUE KEY `uk_workspace_orders_invoice` (`invoice_number`),
+  KEY `idx_workspace_orders_enterprise` (`enterprise_id`),
+  KEY `idx_workspace_orders_reservation` (`reservation_id`),
+  CONSTRAINT `fk_workspace_orders_enterprise`
+    FOREIGN KEY (`enterprise_id`) REFERENCES `enterprises` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
