@@ -23,7 +23,6 @@ import com.marketplace.backend.repository.PostAttachmentRepository;
 import com.marketplace.backend.repository.ProductRepository;
 import com.marketplace.backend.repository.ResourceListingRepository;
 import com.marketplace.backend.repository.TransporterRepository;
-import com.marketplace.backend.repository.UserRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
@@ -46,7 +45,6 @@ public class ResourceListingService {
   private final CommentRepository commentRepository;
   private final EnterpriseRepository enterpriseRepository;
   private final TransporterRepository transporterRepository;
-  private final UserRepository userRepository;
   private final RealtimeNotificationService realtimeNotificationService;
 
   @Transactional
@@ -511,17 +509,15 @@ public class ResourceListingService {
     if (companyId == null) {
       return null;
     }
-    return userRepository.findAllWithProfiles().stream()
-        .filter(
-            user ->
-                (user.getEnterprise() != null
-                        && companyId.equals(user.getEnterprise().getId()))
-                    || (user.getTransporter() != null
-                        && companyId.equals(user.getTransporter().getId())))
-        .map(User::getFullName)
-        .filter(name -> name != null && !name.isBlank())
-        .findFirst()
-        .orElse(null);
+    return enterpriseRepository
+        .findById(companyId)
+        .map(e -> e.getUser().getFullName())
+        .orElseGet(
+            () ->
+                transporterRepository
+                    .findById(companyId)
+                    .map(t -> t.getUser().getFullName())
+                    .orElse(null));
   }
 
   private Long resolveActorCompanyId(User user) {

@@ -24,4 +24,5 @@ public class GeocodingController {
   public ResponseEntity<GeocodingResponse> geocode(@RequestParam String q) {
     return ResponseEntity.ok(geocodingService.geocode(q));
   }
+
 }

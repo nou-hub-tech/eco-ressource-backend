@@ -111,4 +111,5 @@ public class GeocodingService {
   private Double asDouble(Object value) {
     return value instanceof Number n ? n.doubleValue() : Double.valueOf(String.valueOf(value));
   }
+
 }
